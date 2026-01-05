@@ -14,21 +14,20 @@ MAX_SEGMENTS = 15
 def build_driver_view():
     with gr.Column(elem_classes=["dmk-card", "dashboard"]):
 
-        gr.Markdown("## 🚗Driver Dashboard")
+        gr.Markdown("## Driver Dashboard")
 
         # --------------------
         # Trip selection
         # --------------------
-        gr.Markdown("### Select Trip")
         trip_dropdown = gr.Dropdown(
             choices=[],
-            label=None,
+            label="Select Trip",
             interactive=True
         )
 
         segment_dropdown = gr.Dropdown(
             choices=[],
-            label=None,
+            label="Select Segment",
             interactive=True
         )
 
@@ -53,7 +52,7 @@ def build_driver_view():
             elem_classes=["output"]
         )
 
-        debug_box = gr.Markdown(visible=False)
+        # debug_box = gr.Markdown(visible=False)
 
         # Hidden refresh trigger
         refresh_state = gr.State(0)

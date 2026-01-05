@@ -98,6 +98,10 @@ body {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
 }
+:root, body, .gradio-container {
+    background-color: #f3f4f6 !important;
+}
+
 h1, h2, h3 {
     text-align: center;
     color: var(--text-primary);
@@ -116,12 +120,12 @@ h1, h2, h3 {
 .dmk-label {
     display: inline-block;
     background: #2563eb;
-    color: white;
+    color: #ffffff;
     font-size: 13px;
     font-weight: 600;
-    padding: 4px 10px;
+    padding: 6px 12px;
     border-radius: 999px;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
 .dmk-card,
@@ -139,6 +143,14 @@ button,
     font-weight: 600;
     border-radius: 10px !important;
     height: 44px;
+}
+button {
+    background: #2563eb !important;
+    color: white !important;
+    border-radius: 12px !important;
+    height: 48px !important;
+    font-weight: 600;
+    font-size: 16px;
 }
 
 button:hover {
@@ -186,10 +198,20 @@ button:hover {
     margin-bottom: 14px !important;
 }
 
-.gradio-dropdown > div,
-.gradio-textbox input {
-    min-height: 44px;
+.gradio-textbox input,
+.gradio-dropdown > div {
+    background-color: #374151 !important;
+    color: #f9fafb !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 12px 14px !important;
+    font-size: 15px;
 }
+
+.gradio-textbox input::placeholder {
+    color: #9ca3af !important;
+}
+
 
 .gradio-dropdown {
     margin-top: 4px !important;
@@ -211,13 +233,6 @@ select {
     background-color: #ffffff !important;
     color: #1f2937 !important;
     border-color: #d1d5db !important;
-}
-input:focus,
-select:focus,
-textarea:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.25);
 }
 .logout-btn {
     background: linear-gradient(135deg, #ef4444, #dc2626) !important;
@@ -241,7 +256,7 @@ def create_app():
     # DMK LAYOUT + CSS (VERBATIM)
     # ------------------------------------------------------------------
     with gr.Blocks(
-        css= custom_css
+        theme=gr.themes.Soft(primary_hue="blue", secondary_hue="gray", radius_size="lg"), css=custom_css
     ) as app:
 
         # ==========================

@@ -18,10 +18,11 @@ def build_login_view():
             # --------------------
             # Username
             # --------------------
-            # gr.HTML("<span class='dmk-label'>Username</span>")
+            # gr.HTML("<span class='dmk-label'>Username</span>",unsafe_allow_html=True)
             username_box = gr.Textbox(
-                placeholder="Enter username",
-                label="Username"
+                label="Username",
+                placeholder="Enter username"
+                
             )
 
             # --------------------
@@ -68,8 +69,18 @@ def build_login_view():
                     )
 
                 success, role = user
+                if not success:
+                    print(">>> UI: login failed (success=False)")
+                    return (
+                        None,
+                        None,
+                        gr.update(
+                            value="❌ Authentication failed",
+                            visible=True
+                        )
+                    )
+                
                 user_id = username
-
                 print(f">>> UI: login success user_id={user_id} role={role}")
 
                 return (
