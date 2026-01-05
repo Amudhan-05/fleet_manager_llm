@@ -28,7 +28,7 @@ def build_coach_view():
             "Select a driver to view status.",
             elem_classes=["output"]
         )
-
+ 
         driver_dd = gr.Dropdown(
             label="Select Driver",
             choices=[],
