@@ -1,6 +1,6 @@
 import gradio as gr
 from backend.auth.auth_service import authenticate
-
+from backend.state.global_state import GLOBAL_STATE
 
 def build_login_view():
     # Outer container = DMK card
