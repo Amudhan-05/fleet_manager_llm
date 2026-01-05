@@ -70,10 +70,8 @@ def logout():
         gr.update(visible=False) # coach
     )
 
-custom_css = """
-html {
-    color-scheme: light;
-}
+
+custom_css = '''
 :root {
     --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     --card-bg: #ffffff;
@@ -83,23 +81,22 @@ html {
     --accent: #667eea;
     --accent-hover: #5a67d8;
 }
+
 body {
     background: var(--bg-gradient);
-    color: #1f2937;
+    color: var(--text-primary);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     min-height: 100vh;
 }
+
 .gradio-container {
     max-width: 1200px !important;
     margin: auto;
     padding: 20px;
     border-radius: 15px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    background: rgba(255,255,255,0.95);
     backdrop-filter: blur(10px);
-}
-:root, body, .gradio-container {
-    background-color: #f3f4f6 !important;
 }
 
 h1, h2, h3 {
@@ -120,7 +117,7 @@ h1, h2, h3 {
 .dmk-label {
     display: inline-block;
     background: #2563eb;
-    color: #ffffff;
+    color: #fff;
     font-size: 13px;
     font-weight: 600;
     padding: 6px 12px;
@@ -128,63 +125,23 @@ h1, h2, h3 {
     margin-bottom: 8px;
 }
 
-.dmk-card,
-.dashboard {
-    background-color: #ffffff !important;
-    color: #1f2937 !important;
-}
-
-button,
-.button,
-.dmk-login-btn {
-    margin-top: 18px;
+/* Buttons */
+.gradio-button {
     background: var(--accent) !important;
-    color: white !important;
-    font-weight: 600;
-    border-radius: 10px !important;
-    height: 44px;
-}
-button {
-    background: #2563eb !important;
-    color: white !important;
+    color: #fff !important;
     border-radius: 12px !important;
-    height: 48px !important;
     font-weight: 600;
     font-size: 16px;
+    height: 48px !important;
 }
-
-button:hover {
+.gradio-button:hover {
     background: var(--accent-hover) !important;
 }
 
-.dmk-viewport {
-    min-height: 100vh;
-    align-items: center;
-}
-
-
-.dmk-center-vertical {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.dashboard {
-    animation: fadeIn 0.5s ease-in-out;
-}
-
-
-.dashboard h2{
-    margin-bottom: 12px;
-}
-.dashboard h3 {
-    margin-top: 12px;
-    margin-bottom: 6px;
-}
 /* Output box */
 .output {
     background-color: #f8fafc !important;
-    color: #1f2937 !important;
+    color: var(--text-primary) !important;
     margin-top: 12px;
     padding: 16px;
     border-radius: 8px;
@@ -192,64 +149,37 @@ button:hover {
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
 }
 
-/* Dropdown spacing */
+/* Dropdown & textbox spacing */
 .gradio-dropdown,
 .gradio-textbox {
-    margin-bottom: 14px !important;
-}
-
-.gradio-textbox input,
-.gradio-dropdown > div {
-    background-color: #374151 !important;
-    color: #f9fafb !important;
-    border: none !important;
-    border-radius: 10px !important;
-    padding: 12px 14px !important;
-    font-size: 15px;
+    margin-bottom: 8px !important;
 }
 
 .gradio-textbox input::placeholder {
     color: #9ca3af !important;
 }
 
-
-.gradio-dropdown {
-    margin-top: 4px !important;
-}
-
 .segment-hint {
     font-size: 13px;
-    color: #64748b;
+    color: var(--text-muted);
     margin-bottom: 8px;
 }
 
-* {
-    forced-color-adjust: none;
-}
-
-input,
-textarea,
-select {
-    background-color: #ffffff !important;
-    color: #1f2937 !important;
-    border-color: #d1d5db !important;
-}
 .logout-btn {
     background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-    color: white !important;
+    color: #fff !important;
     border-radius: 10px;
     margin-top: 20px;
 }
-
 .logout-btn:hover {
-    box-shadow: 0 6px 18px rgba(239, 68, 68, 0.4);
+    box-shadow: 0 6px 18px rgba(239,68,68,0.4);
 }
-
 
 footer {
     display: none !important;
 }
-"""
+
+'''
 
 def create_app():
     # ------------------------------------------------------------------
