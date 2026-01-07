@@ -72,7 +72,9 @@ def logout():
         None,                    # role_state
         gr.update(visible=True), # login
         gr.update(visible=False),# driver
-        gr.update(visible=False) # coach
+        gr.update(visible=False),# coach
+        gr.update(value=0),      # driver_refresh_state RESET
+        gr.update(value=0),      # coach_refresh_state RESET
     )
 
 
@@ -251,7 +253,7 @@ def create_app():
         driver_logout_btn.click(
             fn=logout,
             inputs=[],
-            outputs=[user_id_state, role_state, login_col, driver_col, coach_col]
+            outputs=[user_id_state, role_state, login_col, driver_col, coach_col, driver_refresh_state, coach_refresh_state]
         )
 
         coach_logout_btn.click(

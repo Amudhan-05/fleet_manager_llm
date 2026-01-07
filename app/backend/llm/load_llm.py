@@ -3,7 +3,7 @@ from llama_cpp import Llama
 from backend.llm.llm_engine import init_llm
 MODEL_PATH = os.getenv(
     "LLM_MODEL_PATH",
-    "driving-coach-app\\app\\backend\\llm\\driving-coach-f16.gguf"
+    "backend\\llm\\driving-coach-f16.gguf"
 )
 
 _llm = None

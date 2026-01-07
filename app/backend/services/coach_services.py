@@ -3,7 +3,7 @@ from backend.state import global_state
 from backend.registry.trip_registry import TripRegistry
 from pathlib import Path
 
-DATA_ROOT = Path("driving-coach-app\\app\\data\\trips")
+DATA_ROOT = Path("data\\trips")
 _registry = TripRegistry(DATA_ROOT)
 
 def get_driver_status(driver_id: str):
