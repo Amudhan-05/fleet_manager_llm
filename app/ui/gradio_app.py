@@ -58,6 +58,11 @@ def route_after_login(user_id, role):
 
 def logout():
     print(">>> LOGOUT")
+    user_id = global_state.current_user_id
+    role = global_state.current_role
+
+    if role == "driver":
+        GLOBAL_STATE.driver_logout(user_id)
 
     global_state.current_user_id = None
     global_state.current_role = None
@@ -254,6 +259,8 @@ def create_app():
             inputs=[],
             outputs=[user_id_state, role_state, login_col, driver_col, coach_col]
         )
+
+        
 
 
     return app

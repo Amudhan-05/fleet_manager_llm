@@ -82,7 +82,11 @@ def build_login_view():
                 
                 user_id = username
                 print(f">>> UI: login success user_id={user_id} role={role}")
-
+                if role == "driver":
+                    GLOBAL_STATE.driver_login(
+                        driver_id=user_id,
+                        name=user_id  # or real name later
+                    )
                 return (
                     user_id,
                     role,

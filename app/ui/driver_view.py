@@ -37,7 +37,7 @@ def build_driver_view():
         )
 
         analyze_btn = gr.Button(
-            "Analyze Trip",
+            "Analyze Segment",
             elem_classes=["button"]
         )
 
@@ -46,7 +46,7 @@ def build_driver_view():
         # --------------------
         # Output
         # --------------------
-        gr.Markdown("### Coaching Feedback")
+        gr.Markdown("### Driving Behaviour Feedback")
         output_box = gr.Markdown(
             "No analysis yet.",
             elem_classes=["output"]

@@ -2,7 +2,7 @@ from pathlib import Path
 from backend.registry.trip_registry import TripRegistry
 
 # Root path to trip data
-DATA_ROOT = Path("app/data/trips")
+DATA_ROOT = Path("driving-coach-app\\app\\data\\trips")
 
 # Singleton registry
 _registry = TripRegistry(DATA_ROOT)

@@ -2,7 +2,7 @@ import csv
 import bcrypt
 from pathlib import Path
 
-USER_FILE = Path("app/data/users.csv")
+USER_FILE = Path("driving-coach-app\\app\\data\\users.csv")
 
 def load_users():
     if not USER_FILE.exists():

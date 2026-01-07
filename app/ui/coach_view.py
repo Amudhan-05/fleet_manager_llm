@@ -67,10 +67,11 @@ def build_coach_view():
             if not info:
                 return "Driver not found."
 
+            status_icon = "🟢 Online" if info["online"] else "🔴 Offline"
+
             return (
                 f"**Driver ID:** `{info['driver_id']}`\n\n"
-                f"**Status:** 🟢 Active\n\n"
-                f"**Trips available:** {info['trip_count']}"
+                f"**Status:** {status_icon}\n\n"
             )
         
         def refresh_drivers():

@@ -3,7 +3,7 @@ from backend.state import global_state
 from backend.registry.trip_registry import TripRegistry
 from pathlib import Path
 
-DATA_ROOT = Path("app/data/trips")
+DATA_ROOT = Path("driving-coach-app\\app\\data\\trips")
 _registry = TripRegistry(DATA_ROOT)
 
 def get_driver_status(driver_id: str):
@@ -18,8 +18,7 @@ def get_driver_status(driver_id: str):
 
     return {
         "driver_id": driver_id,
-        "trip_count": len(trips),
-        "status": "Active",  # UI-level status, not session-level
+        "online": driver_id in GLOBAL_STATE.active_drivers
     }
 
 def list_drivers():

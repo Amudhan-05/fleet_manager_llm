@@ -10,29 +10,33 @@ class GlobalState:
         self.active_drivers = {}
         self.lock = Lock()
 
-    def driver_login(self, driver_id, name):
+    def driver_login(self, driver_id, name=None):
         with self.lock:
+            print(">>> DRIVER LOGIN:", driver_id)
             self.active_drivers[driver_id] = {
-                "name": name,
-                "last_seen": time.time()
+                "name": name or driver_id
             }
+            print(">>> ACTIVE DRIVERS NOW:", self.active_drivers)
 
-    def get_driver_status(self, timeout=300):
-        """
-        timeout: seconds a driver is considered online after login
-        """
-        now = time.time()
-        status = {}
 
+    def get_driver_status(self, driver_id):
         with self.lock:
-            for did, info in self.active_drivers.items():
-                online = (now - info["last_seen"]) < timeout
-                status[did] = {
-                    "name": info["name"],
-                    "online": online,
-                    "last_seen": info["last_seen"]
-                }
-        return status
+            return {
+                "driver_id": driver_id,
+                "online": driver_id in self.active_drivers
+            }
+    
+    def driver_login(self, driver_id, name=None):
+        print(">>> DRIVER LOGIN:", driver_id)
+        self.active_drivers[driver_id] = {
+            "name": name or driver_id
+        }
+        print(">>> ACTIVE DRIVERS NOW:", self.active_drivers)
 
+    def driver_logout(self, driver_id):
+        with self.lock:
+            print(">>> DRIVER LOGOUT:", driver_id)
+            self.active_drivers.pop(driver_id, None)
+            print(">>> ACTIVE DRIVERS NOW:", self.active_drivers)
 
 GLOBAL_STATE = GlobalState()
