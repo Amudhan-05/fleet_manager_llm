@@ -11,7 +11,7 @@ venv/
 Thumbs.db
 
 # LLM models
-app/backend/llm/*
+# app/backend/llm/*
 *.gguf
 
 # # Trip data
