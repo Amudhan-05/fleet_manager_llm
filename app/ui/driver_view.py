@@ -8,7 +8,7 @@ from backend.services.driver_services import (
 from pathlib import Path
 
 
-TRIPS_ROOT = Path("app/data/trips")
+TRIPS_ROOT = Path("data/trips")
 MAX_SEGMENTS = 15
 
 def build_driver_view():
@@ -66,10 +66,12 @@ def build_driver_view():
             print(f">>> DRIVER VIEW: refresh trips for driver={driver_id}")
 
             if driver_id is None:
+                print(">>> DRIVER VIEW: no driver ID")
                 return gr.update(choices=[])
 
             driver_dir = TRIPS_ROOT / driver_id
             if not driver_dir.exists():
+                print(">>> DRIVER VIEW: driver dir does not exist:", driver_dir)
                 return gr.update(choices=[])
 
             trips = sorted(

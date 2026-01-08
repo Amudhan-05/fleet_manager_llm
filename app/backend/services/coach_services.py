@@ -1,10 +1,10 @@
-from backend.state.global_state import GLOBAL_STATE
-from backend.state import global_state
-from backend.registry.trip_registry import TripRegistry
 from pathlib import Path
+from backend.registry.trip_registry import TripRegistry
+from backend.state.global_state import GLOBAL_STATE
 
-DATA_ROOT = Path("data\\trips")
+DATA_ROOT = Path("data/trips")
 _registry = TripRegistry(DATA_ROOT)
+
 
 def get_driver_status(driver_id: str):
     """
@@ -14,7 +14,6 @@ def get_driver_status(driver_id: str):
     if not driver_dir.exists():
         return None
 
-    trips = list_trips(driver_id)
 
     return {
         "driver_id": driver_id,
@@ -31,7 +30,10 @@ def list_drivers():
 
 
 def list_trips(driver_id):
-    driver_dir = Path("app/data/trips") / driver_id
+    
+    driver_dir = DATA_ROOT / driver_id
+    if driver_id.startswith("coach_"):
+        raise ValueError("Coach ID passed as driver_id")
     if not driver_dir.exists():
         return []
     return sorted([p.name for p in driver_dir.iterdir() if p.is_dir()])

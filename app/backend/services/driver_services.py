@@ -1,11 +1,11 @@
 from pathlib import Path
 from backend.registry.trip_registry import TripRegistry
 
-# Root path to trip data
-DATA_ROOT = Path("data\\trips")
 
-# Singleton registry
+DATA_ROOT = Path("data/trips")
 _registry = TripRegistry(DATA_ROOT)
+
+
 
 
 def list_trips(driver_id: str):
@@ -13,7 +13,10 @@ def list_trips(driver_id: str):
     Return list of trip IDs for a driver
     """
     driver_dir = DATA_ROOT / driver_id
-
+    print("Looking for trips in:", driver_dir.resolve())
+    print("Exists:", driver_dir.exists())
+    if driver_dir.exists():
+        print("Contents:", list(driver_dir.iterdir()))
     if not driver_dir.exists():
         return []
 
