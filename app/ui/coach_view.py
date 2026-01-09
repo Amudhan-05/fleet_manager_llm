@@ -26,13 +26,15 @@ def build_coach_view():
 
         driver_status_box = gr.Markdown(
             "Select a driver to view status.",
-            elem_classes=["output"]
+            elem_classes=["output"],
+            visible = False
         )
- 
+        # with gr.Group():
+        #     with gr.Row():
         driver_dd = gr.Dropdown(
             label="Select Driver",
             choices=[],
-            interactive=True
+            interactive=True,
         )
 
         trip_dd = gr.Dropdown(
@@ -50,7 +52,8 @@ def build_coach_view():
         analyze_btn = gr.Button("Analyze Segment")
         output_box = gr.Markdown(
             "No analysis yet.",
-            elem_classes=["output"]
+            elem_classes=["output"],
+            visible = False
         )
 
         # Hidden refresh trigger (unchanged)
@@ -61,7 +64,8 @@ def build_coach_view():
         # -----------------------------
         def refresh_status(driver_id):
             if not driver_id:
-                return "Select a driver to view status."
+                print("Select a driver to view status.")
+                return gr.update(visible=False)
 
             info = get_driver_status(driver_id)
             if not info:
@@ -69,9 +73,10 @@ def build_coach_view():
 
             status_icon = "🟢 Online" if info["online"] else "🔴 Offline"
 
-            return (
+            return gr.update(value = 
                 f"**Driver ID:** `{info['driver_id']}`\n\n"
-                f"**Status:** {status_icon}\n\n"
+                f"**Status:** {status_icon}\n\n",
+                visible=True
             )
         
         def refresh_drivers():
@@ -102,7 +107,7 @@ def build_coach_view():
                 return "❌ Please select driver, trip, and segment."
 
             result = analyze_segment(driver_id, trip_id, segment_idx)
-            return result["coaching"]
+            return gr.update(value=result["coaching"], visible=True)
 
         # -----------------------------
         # Wiring (UNCHANGED)

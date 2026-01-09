@@ -118,6 +118,14 @@ h1, h2, h3 {
     border-radius: var(--card-border-radius);
     box-shadow: 0 8px 32px rgba(0,0,0,0.15);
     margin-top: 20px;
+    /* ADD THESE TWO LINES: */
+    overflow: visible !important; 
+    position: relative; 
+    z-index: 10;
+}
+
+.dmk-viewport {
+    overflow: visible !important;
 }
 
 /* Label pills */
@@ -152,8 +160,15 @@ h1, h2, h3 {
     margin-top: 12px;
     padding: 16px;
     border-radius: 8px;
-    min-height: 120px;
+    min-height: auto;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+}
+/* Add this to hide the box entirely if it's empty */
+.output:empty {
+    display: none;
+    border: none;
+    border: 0;
+    padding: 0;
 }
 
 /* Dropdown & textbox spacing */
@@ -206,8 +221,8 @@ def create_app():
         # Main Content
         # ==========================
         with gr.Row(elem_classes=["dmk-viewport"]):
-            with gr.Column(scale=1):
-                pass
+            # with gr.Column(scale=1):
+            #     pass
 
             with gr.Column(scale=6, elem_classes=["container", "dmk-center-vertical"]):
 
@@ -232,8 +247,8 @@ def create_app():
                 
 
 
-            with gr.Column(scale=1):
-                pass
+            # with gr.Column(scale=1):
+            #     pass
 
         # ==========================
         # ROUTING
@@ -253,13 +268,13 @@ def create_app():
         driver_logout_btn.click(
             fn=logout,
             inputs=[],
-            outputs=[user_id_state, role_state, login_col, driver_col, coach_col, driver_refresh_state, coach_refresh_state]
+            outputs=[user_id_state, role_state]#, login_col, driver_col, coach_col, driver_refresh_state, coach_refresh_state]
         )
 
         coach_logout_btn.click(
             fn=logout,
             inputs=[],
-            outputs=[user_id_state, role_state, login_col, driver_col, coach_col]
+            outputs=[user_id_state, role_state]#, login_col, driver_col, coach_col, driver_refresh_state,coach_refresh_state]
         )
 
         

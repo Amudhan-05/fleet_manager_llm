@@ -49,7 +49,8 @@ def build_driver_view():
         gr.Markdown("### Driving Behaviour Feedback")
         output_box = gr.Markdown(
             "No analysis yet.",
-            elem_classes=["output"]
+            elem_classes=["output"],
+            visible = False
         )
 
         # debug_box = gr.Markdown(visible=False)
@@ -89,7 +90,7 @@ def build_driver_view():
 
             try:
                 result = analyze_trip_segment(driver_id, trip_id, segment_idx)
-                return result["coaching"]
+                return gr.update(value=result["coaching"], visible=True)
             except Exception as e:
                 return f"❌ Analysis failed: {e}"
 
