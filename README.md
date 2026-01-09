@@ -2,6 +2,7 @@
 LLM-powered driving behavior analysis using sensor data.
 
 ## File Structure:
+```
 driving-coach-app/
 │
 ├── README.md
@@ -70,7 +71,7 @@ driving-coach-app/
             │       └── ...
             │
             └── ...
-
+```
 
 ## Requirements:
 Python 3.10+
