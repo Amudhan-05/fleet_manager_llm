@@ -1,258 +1,184 @@
 import gradio as gr
-
 from ui.login_view import build_login_view
 from ui.driver_view import build_driver_view
 from ui.coach_view import build_coach_view
-
 from backend.state import global_state
 from backend.state.global_state import GLOBAL_STATE
 from backend.llm.load_llm import load_llm_once
 
-# ----------------------------
-# Global initialization
-# ----------------------------
 load_llm_once()
 
+custom_css = """
+body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+}
+.gradio-container {
+    max-width: 1200px !important;
+    margin: auto;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+}
+h1, h2, h3 {
+    color: #2c3e50;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+.button {
+    background: linear-gradient(135deg, #667eea, #764ba2) !important;
+    border: none !important;
+    color: white !important;
+    font-weight: bold !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+    padding: 10px 20px !important;
+}
+.button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+.input, .output {
+    border-radius: 8px !important;
+    border: 1px solid #ddd !important;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+}
+.dropdown {
+    background-color: #fff !important;
+}
+.login-box {
+    background: white;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    max-width: 450px;
+    margin: 50px auto;
+}
+.dashboard {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.logout-btn {
+    background: linear-gradient(135deg, #60a5fa, #3b82f6) !important;
+    color: white !important;
+}
+.login-btn {
+    background: linear-gradient(135deg, #60a5fa, #3b82f6) !important;
+    color: white !important;
+    margin-top: 20px !important;
+}
+.logout-btn:hover {
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4) !important;
+}
+.center-header {
+    text-align: center;
+    margin-bottom: 20px;
+    margin-top:30px;
+}
+.center-header_coach {
+    text-align: center;
+    margin-bottom: 5px;
+}
+.center-header_driver {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.center-header_subtitle {
+    text-align: center;
+    margin-bottom: 10px;
+}
+.feedback-box {
+    background: white;
+    border-radius: 10px;
+    border: none !important;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+footer {
+    display: none !important;
+}
+
+.fixed-width-container {
+    width: 500px !important;
+    max-width: 500px !important;
+    min-width: 500px !important;
+    margin: 0 auto !important;
+}
+
+.fixed-width-container > * {
+    max-width: 100% !important;
+}
+
+"""
 
 def route_after_login(user_id, role):
     print(f">>> ROUTER: user_id={user_id}, role={role}")
-
     global_state.current_user_id = user_id
     global_state.current_role = role
-
     print(">>> GLOBAL STATE CHECK")
     print("   user_id:", global_state.current_user_id)
     print("   role:", global_state.current_role)
 
     if role == "driver":
-        # register presence
-        GLOBAL_STATE.driver_login(
-            driver_id=user_id,
-            name=user_id
-        )
-
+        GLOBAL_STATE.driver_login(driver_id=user_id, name=user_id)
         return (
-            gr.update(visible=False),   # login section
-            gr.update(visible=True),    # driver section
-            gr.update(visible=False),   # coach section
-            gr.update(value=1),         # driver refresh
-            gr.update(),                # coach refresh
+            gr.update(visible=False),
+            gr.update(visible=True),
+            gr.update(visible=False),
+            gr.update(value=1),
+            gr.update(value=0),
         )
-
     if role == "coach":
         return (
             gr.update(visible=False),
             gr.update(visible=False),
             gr.update(visible=True),
-            gr.update(),
+            gr.update(value=0),
             gr.update(value=1),
         )
-
     return (
         gr.update(visible=True),
         gr.update(visible=False),
         gr.update(visible=False),
-        gr.update(),
-        gr.update(),
+        gr.update(value=0),
+        gr.update(value=0),
     )
 
 def logout():
     print(">>> LOGOUT")
     user_id = global_state.current_user_id
     role = global_state.current_role
-
     if role == "driver":
         GLOBAL_STATE.driver_logout(user_id)
-
     global_state.current_user_id = None
     global_state.current_role = None
-
     return (
-        None,                    # user_id_state
-        None,                    # role_state
-        gr.update(visible=True), # login
-        gr.update(visible=False),# driver
-        gr.update(visible=False),# coach
-        gr.update(value=0),      # driver_refresh_state RESET
-        gr.update(value=0),      # coach_refresh_state RESET
+        None, None,
+        gr.update(visible=True),
+        gr.update(visible=False),
+        gr.update(visible=False),
+        gr.update(value=0),
+        gr.update(value=0),
     )
 
-
-custom_css = '''
-:root {
-    --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --card-bg: #ffffff;
-    --card-border-radius: 14px;
-    --text-primary: #1f2937;
-    --text-muted: #64748b;
-    --accent: #667eea;
-    --accent-hover: #5a67d8;
-}
-
-body {
-    background: var(--bg-gradient);
-    color: var(--text-primary);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    min-height: 100vh;
-}
-
-.gradio-container {
-    max-width: 1200px !important;
-    margin: auto;
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-    background: rgba(255,255,255,0.95);
-    backdrop-filter: blur(10px);
-}
-
-h1, h2, h3 {
-    text-align: center;
-    color: var(--text-primary);
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-}
-
-.dmk-card {
-    background: var(--card-bg);
-    padding: 32px;
-    border-radius: var(--card-border-radius);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-    margin-top: 20px;
-    /* ADD THESE TWO LINES: */
-    overflow: visible !important; 
-    position: relative; 
-    z-index: 10;
-}
-
-.dmk-viewport {
-    overflow: visible !important;
-}
-
-/* Label pills */
-.dmk-label {
-    display: inline-block;
-    background: #2563eb;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 6px 12px;
-    border-radius: 999px;
-    margin-bottom: 8px;
-}
-
-/* Buttons */
-.gradio-button {
-    background: var(--accent) !important;
-    color: #fff !important;
-    border-radius: 12px !important;
-    font-weight: 600;
-    font-size: 16px;
-    height: 48px !important;
-}
-.gradio-button:hover {
-    background: var(--accent-hover) !important;
-}
-
-/* Output box */
-.output {
-    background-color: #f8fafc !important;
-    color: var(--text-primary) !important;
-    margin-top: 12px;
-    padding: 16px;
-    border-radius: 8px;
-    min-height: auto;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
-}
-/* Add this to hide the box entirely if it's empty */
-.output:empty {
-    display: none;
-    border: none;
-    border: 0;
-    padding: 0;
-}
-
-/* Dropdown & textbox spacing */
-.gradio-dropdown,
-.gradio-textbox {
-    margin-bottom: 8px !important;
-}
-
-.gradio-textbox input::placeholder {
-    color: #9ca3af !important;
-}
-
-.segment-hint {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-bottom: 8px;
-}
-
-.logout-btn {
-    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-    color: #fff !important;
-    border-radius: 10px;
-    margin-top: 20px;
-}
-.logout-btn:hover {
-    box-shadow: 0 6px 18px rgba(239,68,68,0.4);
-}
-
-footer {
-    display: none !important;
-}
-
-'''
-
 def create_app():
-    # ------------------------------------------------------------------
-    # DMK LAYOUT + CSS (VERBATIM)
-    # ------------------------------------------------------------------
-    with gr.Blocks(
-        theme=gr.themes.Soft(primary_hue="blue", secondary_hue="gray", radius_size="lg"), css=custom_css
-    ) as app:
+    with gr.Blocks(theme=gr.themes.Soft(primary_hue="blue", secondary_hue="gray", radius_size="lg"), css=custom_css) as app:
+        
+        with gr.Column(visible=True) as login_col:
+            user_id_state, role_state = build_login_view()
 
-        # ==========================
-        # Header
-        # ==========================
-        with gr.Row():
-            gr.Markdown("# Fleet Management LLM Dashboard")
+        with gr.Column(visible=False) as driver_col:
+            driver_refresh_state, driver_logout_btn = build_driver_view()
 
-        # ==========================
-        # Main Content
-        # ==========================
-        with gr.Row(elem_classes=["dmk-viewport"]):
-            # with gr.Column(scale=1):
-            #     pass
+        with gr.Column(visible=False) as coach_col:
+            coach_refresh_state, coach_logout_btn = build_coach_view()
 
-            with gr.Column(scale=6, elem_classes=["container", "dmk-center-vertical"]):
-
-                # --------------------
-                # LOGIN SECTION
-                # --------------------
-                with gr.Column(visible=True) as login_col:
-                    user_id_state, role_state = build_login_view()
-
-                # --------------------
-                # DRIVER SECTION
-                # --------------------
-                with gr.Column(visible=False) as driver_col:
-                    driver_refresh_state, driver_logout_btn = build_driver_view()
-
-                
-                # --------------------
-                # COACH SECTION
-                # --------------------
-                with gr.Column(visible=False) as coach_col:
-                    coach_refresh_state, coach_logout_btn = build_coach_view()
-                
-
-
-            # with gr.Column(scale=1):
-            #     pass
-
-        # ==========================
-        # ROUTING
-        # ==========================
         role_state.change(
             fn=route_after_login,
             inputs=[user_id_state, role_state],
@@ -262,22 +188,38 @@ def create_app():
                 coach_col,
                 driver_refresh_state,
                 coach_refresh_state,
-            ]
+            ],
+            show_progress=False
         )
 
         driver_logout_btn.click(
             fn=logout,
             inputs=[],
-            outputs=[user_id_state, role_state]#, login_col, driver_col, coach_col, driver_refresh_state, coach_refresh_state]
+            outputs=[
+                user_id_state,
+                role_state,
+                login_col,
+                driver_col,
+                coach_col,
+                driver_refresh_state,
+                coach_refresh_state
+            ],
+            show_progress=False
         )
 
         coach_logout_btn.click(
             fn=logout,
             inputs=[],
-            outputs=[user_id_state, role_state]#, login_col, driver_col, coach_col, driver_refresh_state,coach_refresh_state]
+            outputs=[
+                user_id_state,
+                role_state,
+                login_col,
+                driver_col,
+                coach_col,
+                driver_refresh_state,
+                coach_refresh_state
+            ],
+            show_progress=False
         )
-
-        
-
 
     return app

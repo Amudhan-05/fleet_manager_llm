@@ -1,146 +1,104 @@
 import gradio as gr
 from backend.state import global_state
-from backend.services.driver_services import analyze_trip
-from backend.services.driver_services import (
-    analyze_trip_segment,
-    get_segment_count,
-)
+from backend.services.driver_services import analyze_trip_segment, get_segment_count
 from pathlib import Path
-
 
 TRIPS_ROOT = Path("data/trips")
 MAX_SEGMENTS = 15
 
 def build_driver_view():
-    with gr.Column(elem_classes=["dmk-card", "dashboard"]):
+    with gr.Column(elem_classes=["fixed-width-container"]):
+        gr.Markdown("# Driver Dashboard", elem_classes=["center-header_driver"])
+        gr.Markdown("Get feedback about driving behaviour.")
+        gr.Markdown("---")
 
-        gr.Markdown("## Driver Dashboard")
-
-        # --------------------
-        # Trip selection
-        # --------------------
         trip_dropdown = gr.Dropdown(
             choices=[],
-            label="Select Trip",
+            label="Select Day",
             interactive=True
         )
 
         segment_dropdown = gr.Dropdown(
             choices=[],
-            label="Select Segment",
+            label="Select Trip",
             interactive=True
         )
 
-        segment_hint = gr.Markdown(
-            "_Default: first 30s segment_",
-            elem_classes=["segment-hint"]
-        )
+        segment_hint = gr.Markdown("_Default: first 30s segment_", elem_classes=["segment-hint"])
 
-        analyze_btn = gr.Button(
-            "Analyze Segment",
-            elem_classes=["button"]
-        )
+        analyze_btn = gr.Button("Analyze Trip")
 
         gr.Markdown("---")
+        
+        output_box = gr.Markdown("### Driving Behaviour Feedback\n\nSelect a day and trip, then click 'Analyze Trip' to get feedback.", elem_classes=["feedback-box"], visible=True)
 
-        # --------------------
-        # Output
-        # --------------------
-        gr.Markdown("### Driving Behaviour Feedback")
-        output_box = gr.Markdown(
-            "No analysis yet.",
-            elem_classes=["output"],
-            visible = False
-        )
+    refresh_state = gr.State(0)
 
-        # debug_box = gr.Markdown(visible=False)
+    def list_trips():
+        driver_id = global_state.current_user_id
+        print(f">>> DRIVER VIEW: refresh trips for driver={driver_id}")
 
-        # Hidden refresh trigger
-        refresh_state = gr.State(0)
+        if not driver_id:
+            return gr.update(choices=[])
 
-        # -----------------------------
-        # Helpers (UNCHANGED)
-        # -----------------------------
+        driver_dir = TRIPS_ROOT / driver_id
+        if not driver_dir.exists():
+            return gr.update(choices=[])
 
-        def list_trips():
-            driver_id = global_state.current_user_id
-            print(f">>> DRIVER VIEW: refresh trips for driver={driver_id}")
+        raw_trips = sorted([p.name for p in (TRIPS_ROOT / global_state.current_user_id).iterdir() if p.is_dir()])
+        display_choices = [(f"Day {i}", real_trip) for i, real_trip in enumerate(raw_trips, 1)]
+        
+        return gr.update(choices=display_choices, value=None)
 
-            if driver_id is None:
-                print(">>> DRIVER VIEW: no driver ID")
-                return gr.update(choices=[])
+    def refresh_segments(trip_id):
+        if not trip_id:
+            return gr.update(choices=[], value=None)
+        display_segments = [f"Trip {i+1}" for i in range(MAX_SEGMENTS)]
 
-            driver_dir = TRIPS_ROOT / driver_id
-            if not driver_dir.exists():
-                print(">>> DRIVER VIEW: driver dir does not exist:", driver_dir)
-                return gr.update(choices=[])
+        return gr.update(choices=display_segments, value=display_segments[0] if display_segments else None)
 
-            trips = sorted(
-                p.name for p in driver_dir.iterdir() if p.is_dir()
-            )
+    def analyze_with_mapping(trip_id, segment_display):
+        driver_id = global_state.current_user_id
 
-            return gr.update(choices=trips)
+        if not trip_id:
+            return gr.update(value="### Driving Behaviour Feedback\n\n❌ Please select a trip")
 
-        def analyze_selected_trip(trip_id, segment_idx):
-            driver_id = global_state.current_user_id
-            print(f">>> DRIVER VIEW: driver={driver_id}, trip={trip_id}, segment={segment_idx}")
+        if not segment_display:
+            return gr.update(value="### Driving Behaviour Feedback\n\n❌ Please select a segment")
 
-            if not trip_id:
-                return "❌ Please select a trip"
+        try:
+            segment_idx = int(segment_display.split()[-1]) - 1
+            actual_segments = get_segment_count(driver_id, trip_id)
+            actual_count = len(actual_segments)
 
-            try:
-                result = analyze_trip_segment(driver_id, trip_id, segment_idx)
-                return gr.update(value=result["coaching"], visible=True)
-            except Exception as e:
-                return f"❌ Analysis failed: {e}"
+            if segment_idx >= actual_count:
+                return gr.update(value="### Driving Behaviour Feedback\n\n❌ Selected segment not available (only {} segments exist)".format(actual_count))
+            result = analyze_trip_segment(driver_id, trip_id, segment_idx)
+            return gr.update(value=f"### Driving Behaviour Feedback\n\n{result['coaching']}")
+        except Exception as e:
+            return gr.update(value=f"### Driving Behaviour Feedback\n\n❌ Analysis failed: {e}")
 
+    trip_dropdown.change(
+        fn=refresh_segments,
+        inputs=trip_dropdown,
+        outputs=segment_dropdown,
+        show_progress=False
+    )
 
-        def refresh_segments(trip_id):
-            if not trip_id:
-                return gr.update(choices=[], value=None)
+    analyze_btn.click(
+        fn=analyze_with_mapping,
+        inputs=[trip_dropdown, segment_dropdown],
+        outputs=[output_box],
+        show_progress=False
+    )
 
-            driver_id = global_state.current_user_id
+    refresh_state.change(
+        fn=list_trips,
+        inputs=[],
+        outputs=trip_dropdown,
+        show_progress=False
+    )
 
-            segments = get_segment_count(driver_id, trip_id)
+    logout_btn = gr.Button("Logout", elem_classes=["logout-btn"])
 
-            print(">>> TOTAL SEGMENTS:", len(segments))
-
-            if not segments:
-                return gr.update(choices=[], value=None)
-
-            limited = segments[:MAX_SEGMENTS]
-
-            return gr.update(
-                choices=limited,
-                value=limited[0]
-            )
-
-
-        # -----------------------------
-        # Wiring (UNCHANGED)
-        # -----------------------------
-
-        trip_dropdown.change(
-            fn=refresh_segments,
-            inputs=trip_dropdown,
-            outputs=segment_dropdown
-        )
-
-        analyze_btn.click(
-            fn=analyze_selected_trip,
-            inputs=[trip_dropdown, segment_dropdown],
-            outputs=output_box
-        )
-
-        refresh_state.change(
-            fn=list_trips,
-            inputs=[],
-            outputs=trip_dropdown
-        )
-
-        logout_btn = gr.Button(
-            "Logout",
-            elem_classes=["logout-btn"]
-        )
-
-        return refresh_state, logout_btn
+    return refresh_state, logout_btn
