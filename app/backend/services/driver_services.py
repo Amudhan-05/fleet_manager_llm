@@ -1,6 +1,6 @@
 from pathlib import Path
 from backend.registry.trip_registry import TripRegistry
-
+from backend.processing.severity import assign_severity
 
 DATA_ROOT = Path("data/trips")
 _registry = TripRegistry(DATA_ROOT)
@@ -52,6 +52,18 @@ def analyze_trip(driver_id: str, trip_id: str):
         "coaching": r["coaching"]
     }
 
+def load_segment_severities_for_stream(driver_id: str, trip_id: str, max_segments=15):
+    df = _registry._load_trip_df(driver_id, trip_id)
+
+    severities = []
+    for idx, row in df.iloc[:max_segments].iterrows():
+        sev = assign_severity(row.to_dict())
+        severities.append({
+            "segment_index": idx,
+            "severity": sev
+        })
+
+    return severities
 
 def analyze_trip_segment(driver_id: str, trip_id: str, segment_idx: int):
     return _registry.process_trip_segment(driver_id, trip_id, segment_idx)
@@ -64,3 +76,6 @@ def get_segments(driver_id, trip_id):
 
 def analyze_segment(driver_id, trip_id, segment_idx):
     return _registry.process_trip_segment(driver_id, trip_id, segment_idx)
+
+def get_segment_severities(driver_id: str, trip_id: str):
+    return _registry.list_segment_severities(driver_id, trip_id)

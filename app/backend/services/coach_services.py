@@ -44,15 +44,5 @@ def list_segments(driver_id, trip_id):
 def analyze_segment(driver_id, trip_id, segment_idx):
     return _registry.process_trip_segment(driver_id, trip_id, segment_idx)
 
-# def get_driver_status():
-#     """
-#     Returns dict:
-#     {
-#         driver_id: {
-#             name: str,
-#             online: bool,
-#             last_seen: float
-#         }
-#     }
-#     """
-#     return GLOBAL_STATE.get_driver_status()
+def get_segment_severities(driver_id: str, trip_id: str):
+    return _registry.list_segment_severities(driver_id, trip_id)

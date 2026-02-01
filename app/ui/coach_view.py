@@ -5,7 +5,14 @@ from backend.services.coach_services import (
     list_trips,
     list_segments,
     analyze_segment,
+    get_segment_severities
 )
+from backend.processing.severity import assign_severity
+from backend.registry.trip_registry import TripRegistry
+from pathlib import Path
+
+TRIPS_ROOT = Path("data/trips")
+_registry = TripRegistry(TRIPS_ROOT)
 
 MAX_SEGMENTS = 15
 def build_coach_view():
@@ -33,6 +40,11 @@ def build_coach_view():
             label="Select Trip",
             choices=[],
             interactive=True
+        )
+
+        segment_severity_box = gr.Markdown(
+            "### Severity\n_Select Trip to view severity ",
+            visible=True
         )
 
         analyze_btn = gr.Button("Analyze Trip")
@@ -70,11 +82,17 @@ def build_coach_view():
         if not driver_id or not trip_id:
             return gr.update(choices=[], value=None)
         
-        display_segments = [f"Trip {i+1}" for i in range(MAX_SEGMENTS)]
+        # display_segments = [f"Trip {i+1}" for i in range(MAX_SEGMENTS)]
+
+        # return gr.update(
+        #     choices=display_segments,
+        #     value=display_segments[0] if display_segments else None
+        # )
+        choices = [(f"Trip {i+1}", i) for i in range(MAX_SEGMENTS)]
 
         return gr.update(
-            choices=display_segments,
-            value=display_segments[0] if display_segments else None
+            choices=choices,
+            value=0  # default to Segment 1
         )
 
     def run_analysis(driver_id, trip_id, segment_display):
@@ -96,6 +114,30 @@ def build_coach_view():
             return gr.update(value=f"### Driver's Behaviour Feedback\n\n{result['coaching']}")
         except Exception as e:
             return gr.update(value=f"❌ Error: {e}")
+        
+    def show_selected_segment_severity(driver_id, trip_id, segment_idx):
+        if not driver_id or not trip_id or segment_idx is None:
+            return gr.update(value="### Segment Severity\n_Select a segment_")
+
+        try:
+            df = _registry._load_trip_df(driver_id, trip_id)
+
+            # Guard (even though you know demo data > 15)
+            if segment_idx >= len(df):
+                return gr.update(
+                    value="### Segment Severity\nSegment does not exist."
+                )
+
+            row = df.iloc[segment_idx].to_dict()
+            severity = assign_severity(row)
+
+            return gr.update(
+                value=f"### Segment Severity\n**Segment {segment_idx + 1}: {severity}**"
+            )
+
+        except Exception as e:
+            return gr.update(value=f"### Segment Severity\n❌ Error: {e}")
+
 
     driver_dd.change(
         fn=refresh_status,
@@ -122,6 +164,13 @@ def build_coach_view():
         fn=refresh_segments,
         inputs=[driver_dd, trip_dd],
         outputs=segment_dd,
+        show_progress=False
+    )
+
+    segment_dd.change(
+        fn=show_selected_segment_severity,
+        inputs=[driver_dd, trip_dd, segment_dd],
+        outputs=segment_severity_box,
         show_progress=False
     )
 

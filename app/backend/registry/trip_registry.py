@@ -128,3 +128,22 @@ class TripRegistry:
         df = merge_sensor_csvs(loc, acc, gyro)
 
         return df
+
+    def list_segment_severities(self, driver_id: str, trip_id: str):
+        """
+        Returns severity per segment without calling the LLM.
+        """
+        df = self._load_trip_df(driver_id, trip_id)
+
+        results = []
+        for idx, row in df.iterrows():
+            row_dict = row.to_dict()
+            severity = assign_severity(row_dict)
+
+            results.append({
+                "segment_index": idx,
+                "severity": severity
+            })
+
+        return results
+
