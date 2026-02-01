@@ -18,12 +18,8 @@ MAX_SEGMENTS = 15
 def build_coach_view():
     with gr.Column(elem_classes=["fixed-width-container"]):
         gr.Markdown("## Fleet Manager Dashboard", elem_classes=["center-header_coach"])
-        gr.Markdown("Monitor active drivers and their current status.")
         gr.Markdown("---")
-        gr.Markdown("### Driver Details")
-
-        driver_status_box = gr.Markdown("Select a driver to view details.", elem_classes=["output-box"], visible=True)
-
+        
         driver_dd = gr.Dropdown(
             label="Select Driver",
             choices=[],
@@ -41,6 +37,9 @@ def build_coach_view():
             choices=[],
             interactive=True
         )
+        gr.Markdown("### Driver Details")
+
+        driver_status_box = gr.Markdown("Select a driver to view details.", elem_classes=["output-box"], visible=True)
 
         segment_severity_box = gr.Markdown(
             "### Severity\n_Select Trip to view severity ",
@@ -82,12 +81,6 @@ def build_coach_view():
         if not driver_id or not trip_id:
             return gr.update(choices=[], value=None)
         
-        # display_segments = [f"Trip {i+1}" for i in range(MAX_SEGMENTS)]
-
-        # return gr.update(
-        #     choices=display_segments,
-        #     value=display_segments[0] if display_segments else None
-        # )
         choices = [(f"Trip {i+1}", i) for i in range(MAX_SEGMENTS)]
 
         return gr.update(
@@ -108,7 +101,7 @@ def build_coach_view():
         
     def show_selected_segment_severity(driver_id, trip_id, segment_idx):
         if not driver_id or not trip_id or segment_idx is None:
-            return gr.update(value="### Trip Severity\n_Select a trip")
+            return gr.update(value="### Trip Severity")
 
         try:
             df = _registry._load_trip_df(driver_id, trip_id)
@@ -121,9 +114,14 @@ def build_coach_view():
 
             row = df.iloc[segment_idx].to_dict()
             severity = assign_severity(row)
-
+            if severity == "LOW":
+                severity_icon = "🟢"
+            elif severity == "MEDIUM":
+                severity_icon = "🟡"  
+            else: 
+                severity_icon = "🔴"
             return gr.update(
-                value=f"### Trip Severity\n**Trip {segment_idx + 1}: {severity}**"
+                value=f"### Trip Severity: **{severity_icon} {severity}**"
             )
 
         except Exception as e:
