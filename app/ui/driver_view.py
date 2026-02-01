@@ -170,9 +170,11 @@ def build_driver_view():
 
     
     def should_auto_query(severity, segment_idx, last_queried_idx):
-        if severity == "HIGH":
+        if severity == "LOW":
             return last_queried_idx != segment_idx
         if severity == "MEDIUM":
+            return last_queried_idx != segment_idx
+        if severity == "HIGH":
             return last_queried_idx != segment_idx
         return False
 
@@ -206,7 +208,7 @@ def build_driver_view():
 
     logout_btn = gr.Button("Logout", elem_classes=["logout-btn"])
 
-    STREAM_INTERVAL_SEC = 15.0  # 🔧 adjust freely
+    STREAM_INTERVAL_SEC = 20.0  # 🔧 adjust freely
 
     gr.Timer(STREAM_INTERVAL_SEC).tick(
         fn=advance_segment_stream,
