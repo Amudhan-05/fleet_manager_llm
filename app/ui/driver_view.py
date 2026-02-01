@@ -29,7 +29,7 @@ def build_driver_view():
 
         segment_dropdown = gr.Dropdown(
             choices=["Waiting for stream..."],
-            label="Current Segment",
+            label="Current Trip",
             interactive=False
         )
 
@@ -107,7 +107,7 @@ def build_driver_view():
         first_seg = segments[0]
         severity = first_seg["severity"]
 
-        label = f"Segment 1 — Severity: {severity}"
+        label = f"Trip 1 — Severity: {severity}"
         dropdown_update = gr.update(choices=[label], value=label)
 
         # ---- Segment 1 analysis (IMPORTANT FIX) ----
@@ -144,7 +144,7 @@ def build_driver_view():
         severity = seg["severity"]
 
         # update dropdown display
-        label = f"Segment {idx + 1} — Severity: {severity}"
+        label = f"Trip {idx + 1} — Severity: {severity}"
         dropdown_update = gr.update(choices=[label], value=label)
 
         feedback_update = gr.update()  # default: no change
@@ -206,7 +206,7 @@ def build_driver_view():
 
     logout_btn = gr.Button("Logout", elem_classes=["logout-btn"])
 
-    STREAM_INTERVAL_SEC = 45.0  # 🔧 adjust freely
+    STREAM_INTERVAL_SEC = 15.0  # 🔧 adjust freely
 
     gr.Timer(STREAM_INTERVAL_SEC).tick(
         fn=advance_segment_stream,

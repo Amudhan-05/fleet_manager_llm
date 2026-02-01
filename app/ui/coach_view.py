@@ -97,19 +97,10 @@ def build_coach_view():
 
     def run_analysis(driver_id, trip_id, segment_display):
         if not driver_id or not trip_id or not segment_display:
-            return gr.update(value="❌ Please select driver, trip, and segment.")
+            return gr.update(value="❌ Please select driver, day, and trip.")
 
         try:
-            segment_idx = int(segment_display.split()[-1]) - 1
-            actual_segments = list_segments(driver_id, trip_id)
-            actual_count = len(actual_segments)
-
-            if segment_idx >= actual_count:
-                return gr.update(
-                    value=f"### Driving Behaviour Feedback\n\n"
-                        f"❌ Selected segment not available (only {actual_count} segments exist)"
-                )
-
+            segment_idx = segment_display  # already an int
             result = analyze_segment(driver_id, trip_id, segment_idx)
             return gr.update(value=f"### Driver's Behaviour Feedback\n\n{result['coaching']}")
         except Exception as e:
@@ -117,7 +108,7 @@ def build_coach_view():
         
     def show_selected_segment_severity(driver_id, trip_id, segment_idx):
         if not driver_id or not trip_id or segment_idx is None:
-            return gr.update(value="### Segment Severity\n_Select a segment_")
+            return gr.update(value="### Trip Severity\n_Select a trip")
 
         try:
             df = _registry._load_trip_df(driver_id, trip_id)
@@ -125,18 +116,18 @@ def build_coach_view():
             # Guard (even though you know demo data > 15)
             if segment_idx >= len(df):
                 return gr.update(
-                    value="### Segment Severity\nSegment does not exist."
+                    value="### Trip Severity\nTrip does not exist."
                 )
 
             row = df.iloc[segment_idx].to_dict()
             severity = assign_severity(row)
 
             return gr.update(
-                value=f"### Segment Severity\n**Segment {segment_idx + 1}: {severity}**"
+                value=f"### Trip Severity\n**Trip {segment_idx + 1}: {severity}**"
             )
 
         except Exception as e:
-            return gr.update(value=f"### Segment Severity\n❌ Error: {e}")
+            return gr.update(value=f"### Trip Severity\n❌ Error: {e}")
 
 
     driver_dd.change(
