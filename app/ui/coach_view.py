@@ -10,6 +10,10 @@ from backend.services.coach_services import (
 from backend.processing.severity import assign_severity
 from backend.registry.trip_registry import TripRegistry
 from pathlib import Path
+import threading
+import time
+trip_df_state = None
+trip_df_lock = threading.Lock()
 
 TRIPS_ROOT = Path("data/trips")
 _registry = TripRegistry(TRIPS_ROOT)
@@ -46,6 +50,8 @@ def build_coach_view():
         analyze_btn = gr.Button("Analyze Trip")
 
         output_box = gr.Markdown("### Driving Behaviour Feedback\nSelect trip, then click 'Analyze Trip' to get feedback", elem_classes=["feedback-box"], visible=True)
+    
+    trip_df_state = gr.State(None)
 
     refresh_state = gr.State(0)
 
@@ -75,16 +81,26 @@ def build_coach_view():
         return gr.update(choices=display_choices, value=None)
 
     def refresh_segments(driver_id, trip_id):
+        global trip_df_state
+
         if not driver_id or not trip_id:
             return gr.update(choices=[], value=None)
         
+        with trip_df_lock:
+            trip_df_state = None
+
+        # 🔥 start background load
+        t = threading.Thread(
+            target=load_trip_df_background,
+            args=(driver_id, trip_id),
+            daemon=True
+        )
+        t.start()
+
         choices = [(f"Trip {i+1}", i) for i in range(MAX_SEGMENTS)]
 
-        return gr.update(
-            choices=choices,
-            value=0  # default to Segment 1
-        )
-
+        return gr.update(choices=choices, value=0)
+    
     def run_analysis(driver_id, trip_id, segment_display):
         if not driver_id or not trip_id or not segment_display:
             return gr.update(value="❌ Please select driver, day, and trip.")
@@ -96,19 +112,33 @@ def build_coach_view():
         except Exception as e:
             return gr.update(value=f"❌ Error: {e}")
     
+    def load_trip_df_background(driver_id, trip_id):
+        global trip_df_state
+        df = _registry._load_trip_df(driver_id, trip_id)
+        with trip_df_lock:
+            trip_df_state = df
 
     def show_selected_segment_severity(driver_id, trip_id, segment_idx):
-        if not driver_id or not trip_id or segment_idx is None:
-            return gr.update(value="<h3>Trip Severity</h3>")
+        global trip_df_state    
+        # Wait until DF is ready (very briefly)
+        for _ in range(50):  # ~0.5s max
+            with trip_df_lock:
+                if trip_df_state is not None:
+                    df = trip_df_state
+                    break
+            time.sleep(0.01)
+        else:
+            return gr.update("<h3>Trip Severity</h3><p>Loading…</p>")
         try:
-            df = _registry._load_trip_df(driver_id, trip_id)
             if segment_idx >= len(df):
                 return gr.update(value="<h3>Trip Severity</h3><p>Trip does not exist.</p>")
             row = df.iloc[segment_idx].to_dict()
             severity = assign_severity(row)
             icon = "🟢" if severity == "LOW" else "🟡" if severity == "MEDIUM" else "🔴"
             severity_display = severity.capitalize()
-            return gr.update(value=f"<h3>Trip Severity</h3><p><b>Trip {segment_idx+1}</b>: {icon}{severity_display}</p>")
+            return gr.update(
+                value=f"<h3>Trip Severity</h3><p><b>Trip {segment_idx+1}</b>: {icon} {severity_display}</p>"
+            )
         except Exception as e:
             return gr.update(value=f"<h3>Trip Severity</h3><p>❌ Error: {e}</p>")
 
@@ -141,7 +171,7 @@ def build_coach_view():
         outputs=segment_dd,
         show_progress=False
     )
-
+    
     segment_dd.change(
         fn=show_selected_segment_severity,
         inputs=[driver_dd, trip_dd, segment_dd],

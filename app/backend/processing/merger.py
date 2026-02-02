@@ -39,7 +39,7 @@ def _load_csv(path, index_col="timestamp"):
     return df
 
 
-def merge_sensor_csvs(location_csv, accel_csv, gyro_csv):
+def merge_sensor_csvs(location_csv, accel_csv, gyro_csv, max_segments=None):
     """
     Merge GPS + IMU sensor CSVs into windowed feature dataframe.
 
@@ -106,6 +106,9 @@ def merge_sensor_csvs(location_csv, accel_csv, gyro_csv):
         feat["yaw_variance"] = round(float(gyro_win["rotationRateZ"].var()), 6)
 
         features.append(feat)
+        if max_segments is not None and len(features) >= max_segments:
+            _log(f"Reached max_segments={max_segments}, stopping early")
+            break
 
     df = pd.DataFrame(features)
     _log(f"Generated {len(df)} windows")

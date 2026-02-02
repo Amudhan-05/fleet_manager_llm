@@ -10,7 +10,7 @@ from backend.llm.llm_engine import get_coaching_feedback
 
 # if not is_initialized():
 #     raise RuntimeError("LLM not initialized at app startup")
-
+MAX_SEGMENTS = 15
 
 class TripRegistry:
     """
@@ -125,7 +125,7 @@ class TripRegistry:
                 raise FileNotFoundError(f"Missing file: {f.name}")
 
         # 🔑 single source of truth for segmentation
-        df = merge_sensor_csvs(loc, acc, gyro)
+        df = merge_sensor_csvs(loc, acc, gyro, max_segments=MAX_SEGMENTS)
 
         return df
 
