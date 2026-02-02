@@ -1,19 +1,24 @@
 import gradio as gr
 from backend.state import global_state
-from backend.services.driver_services import (
-    analyze_trip_segment, 
-    get_segment_count, 
-    get_segment_severities, 
-    load_segment_severities_for_stream
-)
+from backend.services.driver_services import load_segment_severities_for_stream
 from backend.processing.severity import build_llm_summary
 from backend.llm.llm_engine import get_coaching_feedback
 from pathlib import Path
 from backend.registry.trip_registry import TripRegistry
+import threading
 
 TRIPS_ROOT = Path("data/trips")
 _registry = TripRegistry(TRIPS_ROOT)
 MAX_SEGMENTS = 15
+
+def start_llm_for_segment(idx, summaries, llm_result_holder):
+    def _run():
+        summary = summaries[idx]
+        coaching = get_coaching_feedback(summary)
+        llm_result_holder["result"] = coaching
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
 
 def build_driver_view():
     with gr.Column(elem_classes=["fixed-width-container"]):
@@ -33,11 +38,13 @@ def build_driver_view():
         output_box = gr.HTML("<h3>Driving Behaviour Feedback</h3>", elem_classes=["feedback-box"], visible=True)
 
     current_trip_state = gr.State(None)
-    last_llm_idx_state = gr.State(None)
+    next_llm_idx_state = gr.State(None)
+    next_llm_result_state = gr.State(None)
+    segment_summaries_state = gr.State(None)
     segment_stream_state = gr.State([])   # list of severities
     segment_pointer_state = gr.State(0)   # current index
     streaming_state = gr.State(False)
-
+    trip_df_state = gr.State(None)
     refresh_state = gr.State(0)
     def start_streaming():
         driver_id = global_state.current_user_id
@@ -55,11 +62,14 @@ def build_driver_view():
             return [], 0, None, None, gr.update(choices=["Waiting for stream..."], value="Waiting for stream..."), gr.update(value="<h3>Driving Behaviour Feedback</h3><p>❌ No trips available</p>"), False
 
         trip_id = raw_trips[0]  # Implicitly use the first trip as "day 1"
-
+        df = _registry._load_trip_df(driver_id, trip_id)
         segments = load_segment_severities_for_stream(driver_id, trip_id)
-
+        summaries = {
+            i: build_llm_summary(df.iloc[i].to_dict())
+            for i in range(len(segments))
+        }
         if not segments:
-            return [], 0, None, None, gr.update(choices=["Waiting for stream..."], value="Waiting for stream..."), gr.update(value="<h3>Driving Behaviour Feedback</h3><p>❌ No segments</p>"), False
+            return [], 0, None, None, gr.update(choices=["Waiting for stream..."], value="Waiting for stream..."), gr.update(value="<h3>Driving Behaviour Feedback</h3><p>❌ No Trips</p>"), False
 
         first_seg = segments[0]
         severity = first_seg["severity"]
@@ -68,85 +78,34 @@ def build_driver_view():
         dropdown_update = gr.update(choices=[label], value=label)
         feedback_update = gr.update()
 
-        if should_auto_query(severity, 0, None):
-            row = _registry._load_trip_df(driver_id, trip_id).iloc[0].to_dict()
-            summary = build_llm_summary(row)
-            coaching = get_coaching_feedback(summary)
-
-            feedback_update = gr.update(
-                value=f"<h3>Driving Behaviour Feedback</h3><p>{coaching}</p>"
-            )
-
-            last_llm_idx = 0
-        else:
-            last_llm_idx = None
+        
 
         return (
             segments,            # segment_stream_state
             0,                   # segment_pointer_state
-            last_llm_idx,        # last_llm_idx_state
             trip_id,             # current_trip_state
             dropdown_update,     # segment_dropdown
             feedback_update,     # output_box
-            True                 # streaming_state (start streaming)
+            True,                 # streaming_state (start streaming)
+            df,
+            summaries
         )
 
     def stop_streaming():
         return (
             [],                  # segment_stream_state
             0,                   # segment_pointer_state
-            None,                # last_llm_idx_state
             None,                # current_trip_state
             gr.update(choices=["Waiting for stream..."], value="Waiting for stream..."),  # segment_dropdown
             gr.update(value="<h3>Driving Behaviour Feedback</h3>"),  # output_box
-            False                # streaming_state (stop streaming)
+            False,                # streaming_state (stop streaming)
+            None
         )
 
-    def init_segment_stream(trip_id):
-        driver_id = global_state.current_user_id
 
-        if not trip_id:
-            return [], 0, None, None, gr.update(), gr.update()
-
-        segments = load_segment_severities_for_stream(driver_id, trip_id)
-
-        if not segments:
-            return [], 0, None, None, gr.update(), gr.update()
-        first_seg = segments[0]
-        severity = first_seg["severity"]
-
-        label = f"Segment 1 — Severity: {severity}"
-        dropdown_update = gr.update(choices=[label], value=label)
-        feedback_update = gr.update()
-
-        if should_auto_query(severity, 0, None):
-            row = _registry._load_trip_df(driver_id, trip_id).iloc[0].to_dict()
-            summary = build_llm_summary(row)
-            coaching = get_coaching_feedback(summary)
-
-            feedback_update = gr.update(
-                value=f"<h3>Driving Behaviour Feedback</h3><p>{coaching}</p>"
-            )
-
-            last_llm_idx = 0
-        else:
-            last_llm_idx = None
-
-        return (
-            segments,            # segment_stream_state
-            0,                   # segment_pointer_state
-            last_llm_idx,        # last_llm_idx_state
-            trip_id,             # current_trip_state
-            dropdown_update,     # segment_dropdown
-            feedback_update      # 🔑 output_box
-        )
-
-    def advance_segment_stream(segments, idx, last_llm_idx, trip_id, streaming):
-        if not streaming:
-            return idx, last_llm_idx, gr.update(), gr.update()
-
-        if not segments:
-            return idx, last_llm_idx, gr.update(), gr.update()
+    def advance_segment_stream(segments, idx, trip_id, streaming, df, summaries, next_llm_idx, next_llm_result):
+        if not streaming or not segments:
+            return idx, gr.update(), gr.update(), next_llm_idx, next_llm_result
 
         seg = segments[idx]
         severity = seg["severity"]
@@ -155,46 +114,51 @@ def build_driver_view():
         dropdown_update = gr.update(choices=[label], value=label)
 
         feedback_update = gr.update()  # default: no change
-
-        # auto-query logic
-        if should_auto_query(severity, idx, last_llm_idx):
-            if trip_id is not None:
-                driver_id = global_state.current_user_id
-                row = _registry._load_trip_df(driver_id, trip_id).iloc[idx].to_dict()
-                summary = build_llm_summary(row)
-                coaching = get_coaching_feedback(summary)
-
+        # ✅ DISPLAY precomputed LLM result for CURRENT segment
+        if (
+            next_llm_idx == idx
+            and isinstance(next_llm_result, dict)
+            and next_llm_result.get("result") is not None
+        ):
             feedback_update = gr.update(
-                value=f"<h3>Driving Behaviour Feedback</h3><p>{coaching}</p>"
+                value=(
+                    "<h3>Driving Behaviour Feedback</h3>"
+                    f"<p>{next_llm_result['result']}</p>"
+                )
             )
-            last_llm_idx = idx
-        
-        next_idx = idx + 1
-        if next_idx >= len(segments):
-            next_idx = idx  # clamp at last segment
+        # 🔮 start LLM for NEXT segment
+        lookahead_idx = idx + 1
+        if lookahead_idx < len(segments):
+            if next_llm_idx != lookahead_idx:
+                holder = {"result": None}
+                start_llm_for_segment(lookahead_idx, summaries, holder)
 
-        return next_idx, last_llm_idx, dropdown_update, feedback_update
+                next_llm_idx = lookahead_idx
+                next_llm_result = holder   # store HOLDER, not result
 
+
+        next_idx = min(idx + 1, len(segments) - 1)
+
+        return (
+            next_idx,
+            dropdown_update,
+            feedback_update,
+            next_llm_idx,
+            next_llm_result
+        )
     
-    def should_auto_query(severity, segment_idx, last_queried_idx):
-        if severity == "LOW":
-            return last_queried_idx != segment_idx
-        if severity == "MEDIUM":
-            return last_queried_idx != segment_idx
-        if severity == "HIGH":
-            return last_queried_idx != segment_idx
-        return False
     start_btn.click(
         fn=start_streaming,
         inputs=[],
         outputs=[
             segment_stream_state,
             segment_pointer_state,
-            last_llm_idx_state,
             current_trip_state,
             segment_dropdown,
             output_box,
-            streaming_state
+            streaming_state,
+            trip_df_state,
+            segment_summaries_state
         ],
         show_progress=False
     )
@@ -204,11 +168,11 @@ def build_driver_view():
         outputs=[
             segment_stream_state,
             segment_pointer_state,
-            last_llm_idx_state,
             current_trip_state,
             segment_dropdown,
             output_box,
-            streaming_state
+            streaming_state,
+            trip_df_state
         ],
         show_progress=False
     )
@@ -221,25 +185,28 @@ def build_driver_view():
 
     logout_btn = gr.Button("Logout", elem_classes=["logout-btn"])
 
-    STREAM_INTERVAL_SEC = 10.0  # 🔧 adjust freely
+    STREAM_INTERVAL_SEC = 15.0  # 🔧 adjust freely
 
     gr.Timer(STREAM_INTERVAL_SEC).tick(
         fn=advance_segment_stream,
         inputs=[
             segment_stream_state,
             segment_pointer_state,
-            last_llm_idx_state,
             current_trip_state,
-            streaming_state 
+            streaming_state,
+            trip_df_state,
+            segment_summaries_state,
+            next_llm_idx_state,
+            next_llm_result_state 
         ],
         outputs=[
             segment_pointer_state,
-            last_llm_idx_state,
             segment_dropdown,
-            output_box
+            output_box,
+            next_llm_idx_state,
+            next_llm_result_state
         ],
         show_progress=False
     )
-
 
     return refresh_state, logout_btn
