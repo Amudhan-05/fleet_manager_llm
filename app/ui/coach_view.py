@@ -45,7 +45,7 @@ def build_coach_view():
 
         driver_status_box = gr.Markdown("Select a driver to view details.", elem_classes=["output-box"], visible=True)
 
-        segment_severity_box = gr.HTML( "<h3>Severity</h3><em>Select Trip to view severity</em>", visible=True )
+        segment_severity_box = gr.HTML( "<h3>Severity</h3>", visible=True )
 
         analyze_btn = gr.Button("Analyze Trip")
 
@@ -99,18 +99,18 @@ def build_coach_view():
 
         choices = [(f"Trip {i+1}", i) for i in range(MAX_SEGMENTS)]
 
-        return gr.update(choices=choices, value=0)
+        return gr.update(choices=choices, value=None)
     
     def run_analysis(driver_id, trip_id, segment_display):
         if not driver_id or not trip_id or not segment_display:
-            return gr.update(value="❌ Please select driver, day, and trip.")
+            return gr.update(value=" Please select driver, day, and trip.")
 
         try:
             segment_idx = segment_display  # already an int
             result = analyze_segment(driver_id, trip_id, segment_idx)
             return gr.update(value=f"### Driver's Behaviour Feedback\n\n{result['coaching']}")
         except Exception as e:
-            return gr.update(value=f"❌ Error: {e}")
+            return gr.update(value=f" Error: {e}")
     
     def load_trip_df_background(driver_id, trip_id):
         global trip_df_state
@@ -119,7 +119,10 @@ def build_coach_view():
             trip_df_state = df
 
     def show_selected_segment_severity(driver_id, trip_id, segment_idx):
-        global trip_df_state    
+        global trip_df_state  
+        time.sleep(1)
+        if not driver_id or not trip_id or segment_idx is None: 
+            return gr.update(value="<h3>Trip Severity</h3><p> Please select a trip.</p>")  
         # Wait until DF is ready (very briefly)
         for _ in range(50):  # ~0.5s max
             with trip_df_lock:
@@ -140,7 +143,7 @@ def build_coach_view():
                 value=f"<h3>Trip Severity</h3><p><b>Trip {segment_idx+1}</b>: {icon} {severity_display}</p>"
             )
         except Exception as e:
-            return gr.update(value=f"<h3>Trip Severity</h3><p>❌ Error: {e}</p>")
+            return gr.update(value=f"<h3>Trip Severity</h3><p> Error: {e}</p>")
 
 
 
