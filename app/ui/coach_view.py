@@ -151,7 +151,7 @@ def build_coach_view():
             trip_df_state = None
 
         return (
-            gr.update(choices=[], value=None),   # driver_dd
+            gr.update(choices=list_drivers(), value=None),   # driver_dd
             gr.update(choices=[], value=None),   # trip_dd
             gr.update(choices=[], value=None),   # segment_dd
             gr.update(value="Select a driver to view details."),  # driver_status_box
