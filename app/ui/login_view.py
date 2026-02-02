@@ -3,7 +3,17 @@ from backend.auth.auth_service import authenticate
 from backend.state.global_state import GLOBAL_STATE
 
 def reset_login_fields():
-    return "", "", None, None, gr.update(value="", visible=False)
+    return (
+        gr.update(visible=True),   # login_col
+        gr.update(visible=False),  # driver_col
+        gr.update(visible=False),  # coach_col
+        0,                          # driver_refresh_state
+        0,                          # coach_refresh_state
+        "",                         # username_box
+        "",                         # password_box
+        None                        # error_box
+    )
+
 
 def build_login_view():
     with gr.Column(elem_classes=["fixed-width-container"]):

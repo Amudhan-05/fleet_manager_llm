@@ -144,8 +144,22 @@ def build_coach_view():
             )
         except Exception as e:
             return gr.update(value=f"<h3>Trip Severity</h3><p> Error: {e}</p>")
+    
+    def reset_coach_view():
+        global trip_df_state
+        with trip_df_lock:
+            trip_df_state = None
 
-
+        return (
+            gr.update(choices=[], value=None),   # driver_dd
+            gr.update(choices=[], value=None),   # trip_dd
+            gr.update(choices=[], value=None),   # segment_dd
+            gr.update(value="Select a driver to view details."),  # driver_status_box
+            gr.update(value="<h3>Severity</h3>"),                 # segment_severity_box
+            gr.update(
+                value="### Driving Behaviour Feedback\nSelect trip, then click 'Analyze Trip'"
+            )                                    # output_box
+        )
 
     driver_dd.change(
         fn=refresh_status,
@@ -162,11 +176,19 @@ def build_coach_view():
     )
 
     refresh_state.change(
-        fn=refresh_drivers,
+        fn=reset_coach_view,
         inputs=[],
-        outputs=driver_dd,
+        outputs=[
+            driver_dd,
+            trip_dd,
+            segment_dd,
+            driver_status_box,
+            segment_severity_box,
+            output_box
+        ],
         show_progress=False
     )
+
 
     trip_dd.change(
         fn=refresh_segments,

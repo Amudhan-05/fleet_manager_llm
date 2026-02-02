@@ -159,12 +159,7 @@ def logout():
     global_state.current_user_id = None
     global_state.current_role = None
     return (
-        None, None,
-        gr.update(visible=True),
-        gr.update(visible=False),
-        gr.update(visible=False),
-        gr.update(value=0),
-        gr.update(value=0),
+        None, None
     )
 
 def create_app():

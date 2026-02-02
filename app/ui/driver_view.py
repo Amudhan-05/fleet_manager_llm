@@ -78,7 +78,10 @@ def build_driver_view():
         dropdown_update = gr.update(choices=[label], value=label)
         feedback_update = gr.update()
 
-        
+        # 🔑 SEED LLM PIPELINE FOR FIRST SEGMENT
+        holder = {"result": None}
+        start_llm_for_segment(0, summaries, holder)
+                
 
         return (
             segments,            # segment_stream_state
@@ -88,7 +91,9 @@ def build_driver_view():
             feedback_update,     # output_box
             True,                 # streaming_state (start streaming)
             df,
-            summaries
+            summaries,
+            0,
+            holder
         )
 
     def stop_streaming():
@@ -147,6 +152,25 @@ def build_driver_view():
             next_llm_result
         )
     
+    def reset_driver_view():
+        return (
+            [],                                  # segment_stream_state
+            0,                                   # segment_pointer_state
+            None,                                # current_trip_state
+            gr.update(
+                choices=["Waiting for stream..."],
+                value="Waiting for stream..."
+            ),                                   # segment_dropdown
+            gr.update(
+                value="<h3>Driving Behaviour Feedback</h3>"
+            ),                                   # output_box
+            False,                               # streaming_state
+            None,                                # trip_df_state
+            None,                                # segment_summaries_state
+            None,                                # next_llm_idx_state
+            None                                 # next_llm_result_state
+        )
+
     start_btn.click(
         fn=start_streaming,
         inputs=[],
@@ -158,7 +182,9 @@ def build_driver_view():
             output_box,
             streaming_state,
             trip_df_state,
-            segment_summaries_state
+            segment_summaries_state,
+            next_llm_idx_state,
+            next_llm_result_state
         ],
         show_progress=False
     )
@@ -177,11 +203,23 @@ def build_driver_view():
         show_progress=False
     )
     refresh_state.change(
-        fn=lambda: None,  # No-op since list_trips is removed
+        fn=reset_driver_view,
         inputs=[],
-        outputs=[],
+        outputs=[
+            segment_stream_state,
+            segment_pointer_state,
+            current_trip_state,
+            segment_dropdown,
+            output_box,
+            streaming_state,
+            trip_df_state,
+            segment_summaries_state,
+            next_llm_idx_state,
+            next_llm_result_state
+        ],
         show_progress=False
     )
+
 
     logout_btn = gr.Button("Logout", elem_classes=["logout-btn"])
 
