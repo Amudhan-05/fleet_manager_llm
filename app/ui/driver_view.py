@@ -30,8 +30,8 @@ def build_driver_view():
         )
         gr.Markdown("---")
         
-        output_box = gr.Markdown("### Driving Behaviour Feedback\n", elem_classes=["feedback-box"], visible=True)
-    
+        output_box = gr.HTML("<h3>Driving Behaviour Feedback</h3>", elem_classes=["feedback-box"], visible=True)
+
     current_trip_state = gr.State(None)
     last_llm_idx_state = gr.State(None)
     segment_stream_state = gr.State([])   # list of severities
@@ -44,22 +44,22 @@ def build_driver_view():
         print(f">>> DRIVER VIEW: starting stream for driver={driver_id}")
 
         if not driver_id:
-            return [], 0, None, None, gr.update(choices=["Waiting for stream..."], value="Waiting for stream..."), gr.update(value="### Driving Behaviour Feedback\n\n❌ No driver ID"), False
+            return [], 0, None, None, gr.update(choices=["Waiting for stream..."], value="Waiting for stream..."), gr.update(value="<h3>Driving Behaviour Feedback</h3><p>❌ No driver ID</p>"), False
 
         driver_dir = TRIPS_ROOT / driver_id
         if not driver_dir.exists():
-            return [], 0, None, None, gr.update(choices=["Waiting for stream..."], value="Waiting for stream..."), gr.update(value="### Driving Behaviour Feedback\n\n❌ No trips directory"), False
+            return [], 0, None, None, gr.update(choices=["Waiting for stream..."], value="Waiting for stream..."), gr.update(value="<h3>Driving Behaviour Feedback</h3><p>❌ No trips directory</p>"), False
 
         raw_trips = sorted([p.name for p in driver_dir.iterdir() if p.is_dir()])
         if not raw_trips:
-            return [], 0, None, None, gr.update(choices=["Waiting for stream..."], value="Waiting for stream..."), gr.update(value="### Driving Behaviour Feedback\n\n❌ No trips available"), False
+            return [], 0, None, None, gr.update(choices=["Waiting for stream..."], value="Waiting for stream..."), gr.update(value="<h3>Driving Behaviour Feedback</h3><p>❌ No trips available</p>"), False
 
         trip_id = raw_trips[0]  # Implicitly use the first trip as "day 1"
 
         segments = load_segment_severities_for_stream(driver_id, trip_id)
 
         if not segments:
-            return [], 0, None, None, gr.update(choices=["Waiting for stream..."], value="Waiting for stream..."), gr.update(value="### Driving Behaviour Feedback\n\n❌ No segments"), False
+            return [], 0, None, None, gr.update(choices=["Waiting for stream..."], value="Waiting for stream..."), gr.update(value="<h3>Driving Behaviour Feedback</h3><p>❌ No segments</p>"), False
 
         first_seg = segments[0]
         severity = first_seg["severity"]
@@ -74,7 +74,7 @@ def build_driver_view():
             coaching = get_coaching_feedback(summary)
 
             feedback_update = gr.update(
-                value=f"### Driving Behaviour Feedback:\n\n{coaching}"
+                value=f"<h3>Driving Behaviour Feedback</h3><p>{coaching}</p>"
             )
 
             last_llm_idx = 0
@@ -98,7 +98,7 @@ def build_driver_view():
             None,                # last_llm_idx_state
             None,                # current_trip_state
             gr.update(choices=["Waiting for stream..."], value="Waiting for stream..."),  # segment_dropdown
-            gr.update(value="### Driving Behaviour Feedback\n"),  # output_box
+            gr.update(value="<h3>Driving Behaviour Feedback</h3>"),  # output_box
             False                # streaming_state (stop streaming)
         )
 
@@ -125,7 +125,7 @@ def build_driver_view():
             coaching = get_coaching_feedback(summary)
 
             feedback_update = gr.update(
-                value=f"### Driving Behaviour Feedback:\n\n{coaching}"
+                value=f"<h3>Driving Behaviour Feedback</h3><p>{coaching}</p>"
             )
 
             last_llm_idx = 0
@@ -165,7 +165,7 @@ def build_driver_view():
                 coaching = get_coaching_feedback(summary)
 
             feedback_update = gr.update(
-                value=f"### Driving Behaviour Feedback:\n\n{coaching}"
+                value=f"<h3>Driving Behaviour Feedback</h3><p>{coaching}</p>"
             )
             last_llm_idx = idx
         
