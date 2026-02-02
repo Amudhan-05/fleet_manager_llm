@@ -2,6 +2,9 @@ import gradio as gr
 from backend.auth.auth_service import authenticate
 from backend.state.global_state import GLOBAL_STATE
 
+def reset_login_fields():
+    return "", "", None, None, gr.update(value="", visible=False)
+
 def build_login_view():
     with gr.Column(elem_classes=["fixed-width-container"]):
         gr.Markdown("# Fleet Management LLM Dashboard", elem_classes=["center-header"])
@@ -51,5 +54,20 @@ def build_login_view():
         outputs=[user_id_state, role_state, error_box],
         show_progress=False
     )
+    username_box.submit(
+        fn=do_login,
+        inputs=[username_box, password_box],
+        outputs=[user_id_state, role_state, error_box],
+        show_progress=False
+    )
 
-    return user_id_state, role_state
+    password_box.submit(
+        fn=do_login,
+        inputs=[username_box, password_box],
+        outputs=[user_id_state, role_state, error_box],
+        show_progress=False
+    )
+    
+    return user_id_state, role_state, username_box, password_box, error_box
+
+

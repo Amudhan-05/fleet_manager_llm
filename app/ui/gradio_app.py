@@ -5,6 +5,7 @@ from ui.coach_view import build_coach_view
 from backend.state import global_state
 from backend.state.global_state import GLOBAL_STATE
 from backend.llm.load_llm import load_llm_once
+from ui.login_view import build_login_view, reset_login_fields
 
 load_llm_once()
 
@@ -114,7 +115,6 @@ footer {
 .fixed-width-container > * {
     max-width: 100% !important;
 }
-
 """
 
 def route_after_login(user_id, role):
@@ -171,7 +171,8 @@ def create_app():
     with gr.Blocks(theme=gr.themes.Soft(primary_hue="blue", secondary_hue="gray", radius_size="lg"), css=custom_css) as app:
         
         with gr.Column(visible=True) as login_col:
-            user_id_state, role_state = build_login_view()
+            user_id_state, role_state, username_box, password_box, error_box = build_login_view()
+
 
         with gr.Column(visible=False) as driver_col:
             driver_refresh_state, driver_logout_btn = build_driver_view()
@@ -193,7 +194,7 @@ def create_app():
         )
 
         driver_logout_btn.click(
-            fn=logout,
+            fn=lambda: (*logout(), *reset_login_fields()),
             inputs=[],
             outputs=[
                 user_id_state,
@@ -202,13 +203,16 @@ def create_app():
                 driver_col,
                 coach_col,
                 driver_refresh_state,
-                coach_refresh_state
+                coach_refresh_state,
+                username_box,
+                password_box,
+                error_box
             ],
             show_progress=False
         )
 
         coach_logout_btn.click(
-            fn=logout,
+            fn=lambda: (*logout(), *reset_login_fields()),
             inputs=[],
             outputs=[
                 user_id_state,
@@ -217,9 +221,13 @@ def create_app():
                 driver_col,
                 coach_col,
                 driver_refresh_state,
-                coach_refresh_state
+                coach_refresh_state,
+                username_box,
+                password_box,
+                error_box
             ],
             show_progress=False
         )
+
 
     return app
