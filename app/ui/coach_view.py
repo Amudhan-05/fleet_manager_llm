@@ -41,10 +41,7 @@ def build_coach_view():
 
         driver_status_box = gr.Markdown("Select a driver to view details.", elem_classes=["output-box"], visible=True)
 
-        segment_severity_box = gr.Markdown(
-            "### Severity\n_Select Trip to view severity ",
-            visible=True
-        )
+        segment_severity_box = gr.HTML( "<h3>Severity</h3><em>Select Trip to view severity</em>", visible=True )
 
         analyze_btn = gr.Button("Analyze Trip")
 
@@ -62,7 +59,7 @@ def build_coach_view():
 
         status_icon = "🟢 Online" if info["online"] else "🔴 Offline"
         return gr.update(
-            value=f"**Driver ID:** `{info['driver_id']}` , **Status:** {status_icon}"
+            value=f"**Driver ID:** {info['driver_id']} , **Status:** {status_icon}"
         )
 
     def refresh_drivers():
@@ -98,34 +95,23 @@ def build_coach_view():
             return gr.update(value=f"### Driver's Behaviour Feedback\n\n{result['coaching']}")
         except Exception as e:
             return gr.update(value=f"❌ Error: {e}")
-        
+    
+
     def show_selected_segment_severity(driver_id, trip_id, segment_idx):
         if not driver_id or not trip_id or segment_idx is None:
-            return gr.update(value="### Trip Severity")
-
+            return gr.update(value="<h3>Trip Severity</h3>")
         try:
             df = _registry._load_trip_df(driver_id, trip_id)
-
-            # Guard (even though you know demo data > 15)
             if segment_idx >= len(df):
-                return gr.update(
-                    value="### Trip Severity\nTrip does not exist."
-                )
-
+                return gr.update(value="<h3>Trip Severity</h3><p>Trip does not exist.</p>")
             row = df.iloc[segment_idx].to_dict()
             severity = assign_severity(row)
-            if severity == "LOW":
-                severity_icon = "🟢"
-            elif severity == "MEDIUM":
-                severity_icon = "🟡"  
-            else: 
-                severity_icon = "🔴"
-            return gr.update(
-                value=f"### Trip Severity: **{severity_icon} {severity}**"
-            )
-
+            icon = "🟢" if severity == "LOW" else "🟡" if severity == "MEDIUM" else "🔴"
+            severity_display = severity.capitalize()
+            return gr.update(value=f"<h3>Trip Severity</h3><p><b>Trip {segment_idx+1}</b>: {icon}{severity_display}</p>")
         except Exception as e:
-            return gr.update(value=f"### Trip Severity\n❌ Error: {e}")
+            return gr.update(value=f"<h3>Trip Severity</h3><p>❌ Error: {e}</p>")
+
 
 
     driver_dd.change(
