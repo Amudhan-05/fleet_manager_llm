@@ -50,33 +50,62 @@ def get_coaching_feedback(summary: str, severity: str, is_coach: bool) -> str:
 
     _log("Sending prompt to LLM")
 
-    if severity == "LOW":
-        output = coach(
-        prompt,
-        max_tokens=200,
-        temperature=1.0,
-        top_p=1.0,
-        repeat_penalty=1.1,
-        stop=["<|eot_id|>","<|start_header_id|>"]
-    )
-    if severity == "MEDIUM":
-        output = coach(
-        prompt,
-        max_tokens=200,
-        temperature=0.8,
-        top_p=0.9,
-        repeat_penalty=1.2,
-        stop=["<|eot_id|>","<|start_header_id|>"]
-    )
-    if severity == "HIGH":
-        output = coach(
-        prompt,
-        max_tokens=300,
-        temperature=0.3, # high temperature for creative long responses
-        top_p=0.6, # low prob low for controlling variety of words
-        repeat_penalty=1.2,
-        stop=["<|eot_id|>","<|start_header_id|>"]
-    )
+    if is_coach:
+        if severity == "LOW":
+            output = coach(
+            prompt,
+            max_tokens=200,
+            temperature=1.0,
+            top_p=1.0,
+            repeat_penalty=1.1,
+            stop=["<|eot_id|>","<|start_header_id|>"]
+        )
+        if severity == "MEDIUM":
+            output = coach(
+            prompt,
+            max_tokens=200,
+            temperature=0.8,
+            top_p=0.9,
+            repeat_penalty=1.2,
+            stop=["<|eot_id|>","<|start_header_id|>"]
+        )
+        if severity == "HIGH":
+            output = coach(
+            prompt,
+            max_tokens=300,
+            temperature=0.8, # high temperature for creative long responses
+            top_p=1.0, # low prob low for controlling variety of words
+            repeat_penalty=1.15,
+            stop=["<|eot_id|>","<|start_header_id|>"]
+        )
+    else:
+        if severity == "LOW":
+            output = coach(
+            prompt,
+            max_tokens=200,
+            temperature=1.0,
+            top_p=1.0,
+            repeat_penalty=1.1,
+            stop=["<|eot_id|>","<|start_header_id|>"]
+        )
+        if severity == "MEDIUM":
+            output = coach(
+            prompt,
+            max_tokens=200,
+            temperature=0.8,
+            top_p=0.9,
+            repeat_penalty=1.2,
+            stop=["<|eot_id|>","<|start_header_id|>"]
+        )
+        if severity == "HIGH":
+            output = coach(
+            prompt,
+            max_tokens=300,
+            temperature=0.3, # high temperature for creative long responses
+            top_p=0.6, # low prob low for controlling variety of words
+            repeat_penalty=1.2,
+            stop=["<|eot_id|>","<|start_header_id|>"]
+        )
     print(">>> RAW RESULT TYPE:", type(output))
     print(">>> RAW RESULT:", output)
     text = output["choices"][0]["text"]
