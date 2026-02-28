@@ -6,16 +6,28 @@ from backend.llm.llm_engine import get_coaching_feedback
 from pathlib import Path
 from backend.registry.trip_registry import TripRegistry
 import threading
+llm_lock = threading.Lock()
 
 TRIPS_ROOT = Path("data/trips")
 _registry = TripRegistry(TRIPS_ROOT)
 MAX_SEGMENTS = 15
 
-def start_llm_for_segment(idx, summaries, llm_result_holder):
+def start_llm_for_segment(idx, summaries, llm_result_holder, severity):
     def _run():
-        summary = summaries[idx]
-        coaching = get_coaching_feedback(summary)
-        llm_result_holder["result"] = coaching
+        # summary = summaries[idx]
+        # coaching = get_coaching_feedback(summary, severity, False)
+        # llm_result_holder["result"] = coaching
+        if not llm_lock.acquire(blocking=False):
+            print("LLM is currently busy. Thread exiting.")
+            return
+        
+        try:
+            summary = summaries[idx]
+            coaching = get_coaching_feedback(summary, severity, False)
+            llm_result_holder["result"] = coaching
+        finally:
+            # ALWAYS release the lock so future threads can run
+            llm_lock.release()
 
     t = threading.Thread(target=_run, daemon=True)
     t.start()
@@ -80,7 +92,7 @@ def build_driver_view():
 
         # 🔑 SEED LLM PIPELINE FOR FIRST SEGMENT
         holder = {"result": None}
-        start_llm_for_segment(0, summaries, holder)
+        start_llm_for_segment(0, summaries, holder, severity)
                 
 
         return (
@@ -136,7 +148,8 @@ def build_driver_view():
         if lookahead_idx < len(segments):
             if next_llm_idx != lookahead_idx:
                 holder = {"result": None}
-                start_llm_for_segment(lookahead_idx, summaries, holder)
+                lookahead_severity = segments[lookahead_idx]["severity"] 
+                start_llm_for_segment(lookahead_idx, summaries, holder, lookahead_severity)
 
                 next_llm_idx = lookahead_idx
                 next_llm_result = holder   # store HOLDER, not result
