@@ -7,7 +7,7 @@ from pathlib import Path
 from backend.registry.trip_registry import TripRegistry
 import threading
 llm_lock = threading.Lock()
-
+ALERT_SEVERITIES = {"high", "critical"}  # adjust to match your labels
 TRIPS_ROOT = Path("data/trips")
 _registry = TripRegistry(TRIPS_ROOT)
 MAX_SEGMENTS = 15
@@ -88,7 +88,46 @@ def build_driver_view():
 
         label = f"Segment 1 — Severity: {severity}"
         dropdown_update = gr.update(choices=[label], value=label)
-        feedback_update = gr.update()
+
+        permission_and_test_script = """
+        <img src="x" style="display:none" onerror="
+        (function() {
+            const existing = document.getElementById('severity-alert-banner');
+            if (existing) existing.remove();
+
+            const banner = document.createElement('div');
+            banner.id = 'severity-alert-banner';
+            banner.innerHTML = '🟢 Alert notifications active';
+            banner.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: rgba(40, 40, 40, 0.85);
+                color: #aaaaaa;
+                font-size: 12px;
+                font-weight: normal;
+                padding: 8px 14px;
+                border-radius: 6px;
+                z-index: 99999;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            `;
+
+            document.body.appendChild(banner);
+            setTimeout(() => {
+                banner.style.transition = 'opacity 1s ease';
+                banner.style.opacity = '0';
+                setTimeout(() => banner.remove(), 1000);
+            }, 2000);
+        })()
+        ">
+        """
+        feedback_update = gr.update(
+                value=(
+                "<h3>Driving Behaviour Feedback</h3>"
+                "<p>Trip started. Monitoring segments...</p>"
+                + permission_and_test_script
+            )
+        )
 
         # 🔑 SEED LLM PIPELINE FOR FIRST SEGMENT
         holder = {"result": None}
@@ -132,6 +171,60 @@ def build_driver_view():
 
         feedback_update = gr.update()  # default: no change
         # ✅ DISPLAY precomputed LLM result for CURRENT segment
+        
+
+        notification_script = ""
+        if severity.lower() in ALERT_SEVERITIES:
+            print(f"NOTIFICATION: {severity}")
+            notification_script = f"""
+            <img src="x" style="display:none" onerror="
+                (function() {{
+                    // --- Sound (programmatic beep, no file needed) ---
+                    try {{
+                        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(880, ctx.currentTime);
+                        gain.gain.setValueAtTime(0.5, ctx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1);
+                        osc.start(ctx.currentTime);
+                        osc.stop(ctx.currentTime + 1);
+                    }} catch(e) {{ console.warn('Audio failed:', e); }}
+
+                    // --- Banner ---
+                    const existing = document.getElementById('severity-alert-banner');
+                    if (existing) existing.remove();
+
+                    const banner = document.createElement('div');
+                    banner.id = 'severity-alert-banner';
+                    banner.innerHTML = '⚠️ HIGH SEVERITY DETECTED — Segment {idx + 1}: {severity}';
+                    banner.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        background: #ff4444;
+                        color: white;
+                        font-size: 18px;
+                        font-weight: bold;
+                        padding: 16px 32px;
+                        border-radius: 10px;
+                        z-index: 99999;
+                        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+                        animation: fadeout 4s forwards;
+                    `;
+
+                    // Auto-dismiss after 4 seconds
+                    document.body.appendChild(banner);
+                    setTimeout(() => banner.remove(), 4000);
+                }})();
+            ">
+            """
+
+
         if (
             next_llm_idx == idx
             and isinstance(next_llm_result, dict)
@@ -141,6 +234,7 @@ def build_driver_view():
                 value=(
                     "<h3>Driving Behaviour Feedback</h3>"
                     f"<p>{next_llm_result['result']}</p>"
+                    + notification_script
                 )
             )
         # 🔮 start LLM for NEXT segment

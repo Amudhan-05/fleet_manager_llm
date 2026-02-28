@@ -24,6 +24,11 @@ body {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
 }
+@keyframes fadeout {
+    0%   { opacity: 1; }
+    75%  { opacity: 1; }
+    100% { opacity: 0; }
+}
 h1, h2, h3 {
     color: #2c3e50;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
