@@ -64,7 +64,7 @@ def get_coaching_feedback(summary: str, severity: str, is_coach: bool) -> str:
             output = coach(
             prompt,
             max_tokens=200,
-            temperature=0.8,
+            temperature=0.4,
             top_p=0.9,
             repeat_penalty=1.2,
             stop=["<|eot_id|>","<|start_header_id|>"]
@@ -73,8 +73,8 @@ def get_coaching_feedback(summary: str, severity: str, is_coach: bool) -> str:
             output = coach(
             prompt,
             max_tokens=300,
-            temperature=0.8, # high temperature for creative long responses
-            top_p=1.0, # low prob low for controlling variety of words
+            temperature=0.9, # high temperature for creative long responses
+            top_p=0.2, # low prob low for controlling variety of words
             repeat_penalty=1.15,
             stop=["<|eot_id|>","<|start_header_id|>"]
         )
