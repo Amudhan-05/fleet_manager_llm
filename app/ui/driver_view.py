@@ -46,7 +46,8 @@ def build_driver_view():
             interactive=False
         )
         gr.Markdown("---")
-        
+        # Add this right above output_box in build_driver_view
+        # output_box = gr.HTML("<h3>Driving Behaviour Summary</h3>", elem_classes=["feedback-box"], visible=True)
         output_box = gr.HTML("<h3>Driving Behaviour Feedback</h3>", elem_classes=["feedback-box"], visible=True)
 
     current_trip_state = gr.State(None)
@@ -170,7 +171,7 @@ def build_driver_view():
         dropdown_update = gr.update(choices=[label], value=label)
 
         feedback_update = gr.update()  # default: no change
-        # ✅ DISPLAY precomputed LLM result for CURRENT segment
+        # DISPLAY precomputed LLM result for CURRENT segment
         
 
         notification_script = ""
@@ -223,8 +224,88 @@ def build_driver_view():
                 }})();
             ">
             """
+        driver_id = global_state.current_user_id
+        summary_text = summaries.get(idx, "No summary available.") if summaries else "No summary available."
+        # Split on the bullet character
+        parts = [p.strip() for p in summary_text.split("•") if p.strip()]
 
+        # First part is the header, rest are metrics
+        header = parts[0]
+        metrics = parts[1:]
 
+        # Build HTML list
+        metrics_html =  "".join(f"<li style='margin-left:12px;'>{m}</li>" for m in metrics)
+        raw_text = _registry.get_raw_sensor_snapshot(driver_id, trip_id, idx)
+        accordion_html = f"""
+        <style>
+            .seg-details {{
+                border: none;
+                border-radius: 0;
+                margin-bottom: 12px;
+                background: transparent;
+                box-shadow: none;
+                overflow: hidden;
+            }}
+
+            .seg-details summary {{
+                padding: 8px 0;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 600;
+                color: #2c3e50;
+                list-style: none;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                user-select: none;
+                transition: color 0.2s ease;
+            }}
+
+            .seg-details summary::-webkit-details-marker {{ display: none; }}
+
+            .seg-details summary::before {{
+                content: '▶';
+                font-size: 12px;
+                color: #2c3e50; /* blue arrow */
+                transition: transform 0.2s;
+            }}
+
+            .seg-details[open] summary::before {{ transform: rotate(90deg); }}
+
+            .seg-details[open] summary {{
+                color: #2c3e50; 
+            }}
+
+            .seg-details summary:hover {{
+                color: #4b5563; 
+            }}
+
+            .seg-inner {{
+                padding: 14px 16px;
+                color: #555;
+                font-size: 13px;
+                line-height: 1.6;
+                background-color: #f9fafb;
+                border-radius: 6px;
+            }}
+
+            
+            
+
+        </style>
+        <details class='seg-details'>
+            <summary> Sensor Summary</summary>
+            <div class='seg-inner'>
+                <pre style='color:#2c3e50;font-size:12px;font-family:monospace;line-height:1.8;margin:0;white-space:pre-wrap'>{metrics_html}</pre>
+            </div>
+        </details>
+        <details class='seg-details'>
+            <summary> Raw Accelerometer, Gyroscope &amp; Location</summary>
+            <div class='seg-inner'>
+                <pre style='color:#2c3e50;font-size:12px;font-family:monospace;line-height:1.8;margin:0;white-space:pre-wrap'>{raw_text}</pre>
+            </div>
+        </details>
+        """
         if (
             next_llm_idx == idx
             and isinstance(next_llm_result, dict)
@@ -233,7 +314,18 @@ def build_driver_view():
             feedback_update = gr.update(
                 value=(
                     "<h3>Driving Behaviour Feedback</h3>"
+                    + accordion_html
+                    + "<h5>Feedback</h5>"
                     f"<p>{next_llm_result['result']}</p>"
+                    + notification_script
+                )
+            )
+        else:
+            feedback_update = gr.update(
+                value=(
+                    accordion_html
+                    + "<h3>Driving Behaviour Feedback</h3>"
+                    "<p>⏳ Analysing segment, feedback incoming...</p>"
                     + notification_script
                 )
             )
