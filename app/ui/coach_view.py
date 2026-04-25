@@ -5,7 +5,9 @@ from backend.services.coach_services import (
     list_trips,
     list_segments,
     analyze_segment,
-    get_segment_severities
+    get_segment_severities,
+    get_driver_score,
+    get_driver_score_breakdown
 )
 from backend.processing.severity import assign_severity
 from backend.registry.trip_registry import TripRegistry
@@ -47,6 +49,9 @@ def build_coach_view():
 
         segment_severity_box = gr.HTML( "<h3>Severity</h3>", visible=True )
 
+        gr.Markdown("### Driver Performance Score")
+        driver_score_box = gr.Markdown("Select a driver to view performance score.", elem_classes=["output-box"], visible=True)
+
         analyze_btn = gr.Button("Analyze Trip")
 
         output_box = gr.Markdown("### Driving Behaviour Feedback\nSelect trip, then click 'Analyze Trip' to get feedback", elem_classes=["feedback-box"], visible=True)
@@ -67,6 +72,63 @@ def build_coach_view():
         return gr.update(
             value=f"**Driver ID:** {info['driver_id']} , **Status:** {status_icon}"
         )
+
+    def get_driver_score_display(driver_id):
+        """Generate formatted driver score display"""
+        if not driver_id:
+            return gr.update(value="Select a driver to view performance score.")
+        
+        try:
+            driver_score = get_driver_score(driver_id)
+            
+            if "error" in driver_score:
+                return gr.update(value="*No score data available*")
+            
+            # Color coding based on rating
+            rating = driver_score.get("driver_rating", "Unknown")
+            score = driver_score.get("overall_score", 0)
+            
+            if rating == "High Risk":
+                emoji = "🔴"
+                color_class = "high-risk"
+            elif rating == "Needs Improvement":
+                emoji = "🟠"
+                color_class = "medium-risk"
+            elif rating == "Fair":
+                emoji = "🟡"
+                color_class = "fair-risk"
+            elif rating == "Good":
+                emoji = "🟢"
+                color_class = "good-score"
+            else:  # Excellent
+                emoji = "⭐"
+                color_class = "excellent-score"
+            
+            # Format the display
+            trips = driver_score.get("trip_count", 0)
+            avg_score = driver_score.get("average_trip_score", 0)
+            breakdown = get_driver_score_breakdown(driver_id)
+            high_count = breakdown.get("total_high", 0)
+            medium_count = breakdown.get("total_medium", 0)
+            low_count = breakdown.get("total_low", 0)
+            total_segments = breakdown.get("total_segments", 0)
+            
+            score_display = f"""
+
+**Overall Score:** {score}/100 {emoji}  
+**Rating:** {rating}  
+**Average Trip Score:** {avg_score}/100  
+
+**Trip Breakdown:**
+- 🔴 High Severity Trips: {high_count}
+- 🟡 Medium Severity Trips: {medium_count}  
+- 🟢 Low Severity Trips: {low_count}  
+
+**Total Trips:** {total_segments}"""
+            
+            return gr.update(value=score_display)
+        except Exception as e:
+            return gr.update(value=f"*Error loading score: {e}*")
 
     def refresh_drivers():
         drivers = list_drivers()
@@ -97,12 +159,14 @@ def build_coach_view():
         )
         t.start()
 
-        choices = [(f"Trip {i+1}", i) for i in range(MAX_SEGMENTS)]
+        segment_severities = get_segment_severities(driver_id, trip_id)
+        choices = [(f"Segment {i+1}", i) for i in range(len(segment_severities))]
 
         return gr.update(choices=choices, value=None)
+
     
     def run_analysis(driver_id, trip_id, segment_display):
-        if not driver_id or not trip_id or not segment_display:
+        if not driver_id or not trip_id or segment_display is None:
             return gr.update(value=" Please select driver, day, and trip.")
 
         try:
@@ -155,7 +219,8 @@ def build_coach_view():
             gr.update(choices=[], value=None),   # trip_dd
             gr.update(choices=[], value=None),   # segment_dd
             gr.update(value="Select a driver to view details."),  # driver_status_box
-            gr.update(value="<h3>Severity</h3>"),                 # segment_severity_box
+            gr.update(value="Select a driver to view performance score."),  # driver_score_box
+            gr.update(value="<h3>Severity</h3>"),                           # segment_severity_box  
             gr.update(
                 value="### Driving Behaviour Feedback\nSelect trip, then click 'Analyze Trip'"
             )                                    # output_box
@@ -165,6 +230,13 @@ def build_coach_view():
         fn=refresh_status,
         inputs=driver_dd,
         outputs=driver_status_box,
+        show_progress=False
+    )
+
+    driver_dd.change(
+        fn=get_driver_score_display,
+        inputs=driver_dd,
+        outputs=driver_score_box,
         show_progress=False
     )
 
@@ -183,6 +255,7 @@ def build_coach_view():
             trip_dd,
             segment_dd,
             driver_status_box,
+            driver_score_box,
             segment_severity_box,
             output_box
         ],
